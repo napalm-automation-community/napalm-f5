@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../calypso/calypso/.idea/calypso.iml" filepath="$PROJECT_DIR$/../../calypso/calypso/.idea/calypso.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/napalm-f5.iml" filepath="$PROJECT_DIR$/.idea/napalm-f5.iml" />
+      <module fileurl="file://$USER_HOME$/PycharmProjects/ucs_manipulation/.idea/ucs_manipulation.iml" filepath="$USER_HOME$/PycharmProjects/ucs_manipulation/.idea/ucs_manipulation.iml" />
+    </modules>
+  </component>
+</project>
