@@ -32,7 +32,7 @@ class TestConfigF5Driver(unittest.TestCase, TestConfigNetworkDriver):
         cls.vendor = 'f5'
 
         optional_args = {'port': None, }
-        cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
+        cls.device = f5.F5Driver(hostname, username, password, timeout=60,
                                              optional_args=optional_args)
         cls.device.open()
 

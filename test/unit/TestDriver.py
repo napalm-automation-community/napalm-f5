@@ -16,7 +16,7 @@
 
 import unittest
 
-from napalm_skeleton import skeleton
+from napalm_f5 import f5
 from napalm_base.test.base import TestConfigNetworkDriver, TestGettersNetworkDriver
 import json
 
@@ -27,13 +27,13 @@ class TestConfigDriver(unittest.TestCase, TestConfigNetworkDriver):
     @classmethod
     def setUpClass(cls):
         """Run before starting the tests."""
-        hostname = '127.0.0.1'
-        username = 'vagrant'
-        password = 'vagrant'
+        hostname = '10.144.129.58'
+        username = 'admin'
+        password = 'admin'
         cls.vendor = 'f5'
 
-        optional_args = {'port': 12443, }
-        cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
+        optional_args = {'port': None, }
+        cls.device = f5.F5Driver(hostname, username, password, timeout=60,
                                              optional_args=optional_args)
         cls.device.open()
 
@@ -49,13 +49,13 @@ class TestGetterDriver(unittest.TestCase, TestGettersNetworkDriver):
         """Run before starting the tests."""
         cls.mock = True
 
-        hostname = '127.0.0.1'
-        username = 'vagrant'
-        password = 'vagrant'
+        hostname = '10.144.129.58'
+        username = 'admin'
+        password = 'admin'
         cls.vendor = 'f5'
 
-        optional_args = {'port': 12443, }
-        cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
+        optional_args = {'port': None, }
+        cls.device = f5.F5Driver(hostname, username, password, timeout=60,
                                              optional_args=optional_args)
 
         if cls.mock:

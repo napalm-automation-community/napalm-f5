@@ -6,7 +6,7 @@ from napalm_base.test import conftest as parent_conftest
 
 from napalm_base.test.double import BaseTestDouble
 
-from napalm_skeleton import skeleton
+from napalm_f5 import f5
 
 
 @pytest.fixture(scope='class')
@@ -16,8 +16,8 @@ def set_device_parameters(request):
         request.cls.device.close()
     request.addfinalizer(fin)
 
-    request.cls.driver = skeleton.SkeletonDriver
-    request.cls.patched_driver = PatchedSkeletonDriver
+    request.cls.driver = f5.F5Driver
+    request.cls.patched_driver = PatchedF5Driver
     request.cls.vendor = 'f5'
     parent_conftest.set_device_parameters(request)
 
@@ -27,19 +27,19 @@ def pytest_generate_tests(metafunc):
     parent_conftest.pytest_generate_tests(metafunc, __file__)
 
 
-class PatchedSkeletonDriver(skeleton.SkeletonDriver):
-    """Patched Skeleton Driver."""
+class PatchedF5Driver(f5.F5Driver):
+    """Patched F5 Driver."""
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
-        """Patched Skeleton Driver constructor."""
+        """Patched F5 Driver constructor."""
         super().__init__(hostname, username, password, timeout, optional_args)
 
         self.patched_attrs = ['device']
-        self.device = FakeSkeletonDevice()
+        self.device = FakeF5Device()
 
 
-class FakeSkeletonDevice(BaseTestDouble):
-    """Skeleton device test double."""
+class FakeF5Device(BaseTestDouble):
+    """F5 device test double."""
 
     def run_commands(self, command_list, encoding='json'):
         """Fake run_commands."""
