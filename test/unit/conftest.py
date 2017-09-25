@@ -18,7 +18,7 @@ def set_device_parameters(request):
 
     request.cls.driver = skeleton.SkeletonDriver
     request.cls.patched_driver = PatchedSkeletonDriver
-    request.cls.vendor = 'skeleton'
+    request.cls.vendor = 'f5'
     parent_conftest.set_device_parameters(request)
 
 

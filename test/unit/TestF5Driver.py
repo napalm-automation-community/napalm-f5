@@ -16,22 +16,22 @@
 
 import unittest
 
-from napalm_skeleton import skeleton
+from napalm_f5 import f5
 from napalm_base.test.base import TestConfigNetworkDriver
 
 
-class TestConfigSkeletonDriver(unittest.TestCase, TestConfigNetworkDriver):
+class TestConfigF5Driver(unittest.TestCase, TestConfigNetworkDriver):
     """Group of tests that test Configuration related methods."""
 
     @classmethod
     def setUpClass(cls):
         """Run before starting the tests."""
-        hostname = '127.0.0.1'
-        username = 'vagrant'
-        password = 'vagrant'
-        cls.vendor = 'skeleton'
+        hostname = '10.144.129.58'
+        username = 'admin'
+        password = 'admin'
+        cls.vendor = 'f5'
 
-        optional_args = {'port': 12443, }
+        optional_args = {'port': None, }
         cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
                                              optional_args=optional_args)
         cls.device.open()

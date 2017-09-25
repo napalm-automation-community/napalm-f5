@@ -30,7 +30,7 @@ class TestConfigDriver(unittest.TestCase, TestConfigNetworkDriver):
         hostname = '127.0.0.1'
         username = 'vagrant'
         password = 'vagrant'
-        cls.vendor = 'skeleton'
+        cls.vendor = 'f5'
 
         optional_args = {'port': 12443, }
         cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
@@ -52,7 +52,7 @@ class TestGetterDriver(unittest.TestCase, TestGettersNetworkDriver):
         hostname = '127.0.0.1'
         username = 'vagrant'
         password = 'vagrant'
-        cls.vendor = 'skeleton'
+        cls.vendor = 'f5'
 
         optional_args = {'port': 12443, }
         cls.device = skeleton.SkeletonDriver(hostname, username, password, timeout=60,
