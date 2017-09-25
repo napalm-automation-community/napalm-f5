@@ -13,7 +13,8 @@ from napalm_f5 import f5
 def set_device_parameters(request):
     """Set up the class."""
     def fin():
-        request.cls.device.close()
+        pass
+        #request.cls.device.close()
     request.addfinalizer(fin)
 
     request.cls.driver = f5.F5Driver
@@ -36,6 +37,9 @@ class PatchedF5Driver(f5.F5Driver):
 
         self.patched_attrs = ['device']
         self.device = FakeF5Device()
+
+    def open(self):
+        pass
 
 
 class FakeF5Device(BaseTestDouble):
