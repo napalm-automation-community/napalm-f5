@@ -38,7 +38,7 @@ class PatchedF5Driver(f5.F5Driver):
         super().__init__(hostname, username, password, timeout, optional_args)
 
         self.patched_attrs = ['device']
-        #self.device = FakeF5Device()
+        self.device = FakeF5Device()
         #self.devices = None
 
     def open(self):
