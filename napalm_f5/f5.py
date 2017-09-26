@@ -99,22 +99,22 @@ class F5Driver(NetworkDriver):
         except bigsuds.OperationFailed as err:
             raise DiscardConfigException('{}'.format(err))
 
-    def _get_uptime(self):
-        return self.device.System.SystemInfo.get_uptime()
+    #def _get_uptime(self):
+    #    return self.device.System.SystemInfo.get_uptime()
 
-    def _get_version(self):
-        return self.device.System.SystemInfo.get_version()
+    #def _get_version(self):
+    #    return self.device.System.SystemInfo.get_version()
 
-    def _get_serial_number(self):
-        system_information = self.device.System.SystemInfo.get_system_information()
-        chassis_serial = system_information['chassis_serial']
-        return chassis_serial
+    #def _get_serial_number(self):
+    #    system_information = self.device.System.SystemInfo.get_system_information()
+    #    chassis_serial = system_information['chassis_serial']
+    #    return chassis_serial
 
-    def _get_model(self):
-        return self.device.System.SystemInfo.get_marketing_name()
+    #def _get_model(self):
+    #    return self.device.System.SystemInfo.get_marketing_name()
 
-    def _get_hostname(self):
-        return self.device.Management.Device.get_hostname(self.devices)
+    #def _get_hostname(self):
+    #    return self.device.Management.Device.get_hostname(self.devices)
 
     def get_facts(self):
         facts = {
