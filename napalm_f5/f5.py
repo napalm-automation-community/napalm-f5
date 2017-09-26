@@ -119,13 +119,13 @@ class F5Driver(NetworkDriver):
     def get_facts(self):
         facts = {
             'uptime': self._get_uptime(),
-            'vendor': 'F5 Networks',
-            'model': self._get_model(),
-            'hostname': self._get_hostname(),
-            'fqdn': self._get_hostname(),
-            'os_version': self._get_version(),
-            'serial_number': self._get_serial_number(),
-            'interface_list': self._get_interfaces_list()
+            #'vendor': 'F5 Networks',
+            #'model': self._get_model(),
+            #'hostname': self._get_hostname(),
+            #'fqdn': self._get_hostname(),
+            #'os_version': self._get_version(),
+            #'serial_number': self._get_serial_number(),
+            #'interface_list': self._get_interfaces_list()
         }
         return facts
 
