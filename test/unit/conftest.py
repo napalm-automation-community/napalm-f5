@@ -68,3 +68,4 @@ class FakeF5Device():
     @staticmethod
     def name(orig_name):
         name = orig_name.replace('.', '_').lower()
+        return 10
