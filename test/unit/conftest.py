@@ -53,9 +53,13 @@ class FakeF5Device():
         self.System = Mock()
 
         self.System.SystemInfo.get_marketing_name = 'BIG-IP Virtual Edition'
-        self.System.SystemInfo.get_uptime = 1457282
+        self.System.SystemInfo.get_uptime = self.gu
         self.System.SystemInfo.get_version = 'BIG-IP_v13.0.0'
         self.System.SystemInfo.get_system_information = {}
+
+    @staticmethod
+    def gu():
+        return 999
 
     def open(self):
         pass
