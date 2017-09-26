@@ -38,8 +38,8 @@ class PatchedF5Driver(f5.F5Driver):
         super().__init__(hostname, username, password, timeout, optional_args)
 
         self.patched_attrs = ['device']
-        self.device = FakeF5Device()
-        self.devices = None
+        #self.device = FakeF5Device()
+        #self.devices = None
 
     def open(self):
         pass
@@ -49,25 +49,26 @@ class FakeF5Device():
     """F5 device test double."""
 
     def __init__(self):
-        self.Management = Mock()
-        self.Networking = Mock()
-        self.System = Mock()
+        pass
+    #    self.Management = Mock()
+    #    self.Networking = Mock()
+    #    self.System = Mock()
 
-        self.System.SystemInfo.get_marketing_name = iControlMock.get_marketing_name
-        self.System.SystemInfo.get_uptime = iControlMock.get_uptime
-        self.System.SystemInfo.get_version = iControlMock.get_version
-        self.System.SystemInfo.get_system_information = iControlMock.get_system_information
+    #    self.System.SystemInfo.get_marketing_name = iControlMock.get_marketing_name
+    #    self.System.SystemInfo.get_uptime = iControlMock.get_uptime
+    #    self.System.SystemInfo.get_version = iControlMock.get_version
+    #    self.System.SystemInfo.get_system_information = iControlMock.get_system_information
 
     def open(self):
         pass
 
-    @staticmethod
-    def get_content(**kwargs):
-        return 10
+    #@staticmethod
+    #def get_content(**kwargs):
+    #    return 10
 
-    @staticmethod
-    def name(orig_name):
-        name = orig_name.replace('.', '_').lower()
+    #@staticmethod
+    #def name(orig_name):
+    #    name = orig_name.replace('.', '_').lower()
 
 
 class iControlMock():
