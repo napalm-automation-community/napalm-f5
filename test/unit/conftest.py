@@ -53,7 +53,7 @@ class FakeF5Device():
         self.System = Mock()
 
         self.System.SystemInfo.get_marketing_name = self.get_content(self.name('System.SystemInfo.get_marketing_name'))
-        self.System.SystemInfo.get_uptime = name
+        self.System.SystemInfo.get_uptime = self.name
         self.System.SystemInfo.get_version = self.get_content(self.name('System.SystemInfo.get_version'))
         self.System.SystemInfo.get_system_information = self.get_content(self.name('System.SystemInfo.get_system_information'))
 
