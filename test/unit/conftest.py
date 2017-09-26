@@ -52,10 +52,10 @@ class FakeF5Device():
         self.Networking = Mock()
         self.System = Mock()
 
-        self.System.SystemInfo.get_marketing_name = self.get_content(self.name(System.SystemInfo.get_marketing_name))
-        self.System.SystemInfo.get_uptime = self.get_content(self.name(System.SystemInfo.get_uptime))
-        self.System.SystemInfo.get_version = self.get_content(self.name(System.SystemInfo.get_version))
-        self.System.SystemInfo.get_system_information = self.get_content(self.name(System.SystemInfo.get_system_information))
+        self.System.SystemInfo.get_marketing_name = self.get_content(self.name('System.SystemInfo.get_marketing_name'))
+        self.System.SystemInfo.get_uptime = self.get_content(self.name('System.SystemInfo.get_uptime'))
+        self.System.SystemInfo.get_version = self.get_content(self.name('System.SystemInfo.get_version'))
+        self.System.SystemInfo.get_system_information = self.get_content('self.name(System.SystemInfo.get_system_information'))
 
 
     def open(self):
