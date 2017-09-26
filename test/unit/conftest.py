@@ -50,14 +50,15 @@ class FakeF5Device():
 
     def __init__(self):
         pass
-    #    self.Management = Mock()
-    #    self.Networking = Mock()
+        self.Management = Mock()
+        self.Networking = Mock()
         self.System = Mock()
 
-    #    self.System.SystemInfo.get_marketing_name = iControlMock.get_marketing_name
+        self.System.SystemInfo.get_hostname = iControlMock.get_hostname
+        self.System.SystemInfo.get_marketing_name = iControlMock.get_marketing_name
         self.System.SystemInfo.get_uptime = iControlMock.get_uptime
-    #    self.System.SystemInfo.get_version = iControlMock.get_version
-    #    self.System.SystemInfo.get_system_information = iControlMock.get_system_information
+        self.System.SystemInfo.get_version = iControlMock.get_version
+        self.System.SystemInfo.get_system_information = iControlMock.get_system_information
 
     def open(self):
         pass
@@ -82,6 +83,10 @@ class iControlMock():
 
     @staticmethod
     def get_version():
+        return 'BIG-IP_v13.0.0'
+
+    @staticmethod
+    def get_hostname():
         return 'BIG-IP_v13.0.0'
 
     @staticmethod
