@@ -59,11 +59,11 @@ class FakeF5Device():
         #self.System.SystemInfo.get_version = iControlMock.get_version
         #self.System.SystemInfo.get_system_information = iControlMock.get_system_information
 
-    class System()
+    class System():
         def __init__(self):
             self.SystemInfo = SystemInfo()
 
-    class SystemInfo()
+    class SystemInfo():
         def __init__(self):
             pass
         def get_hostname(self):
