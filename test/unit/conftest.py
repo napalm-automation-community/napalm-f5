@@ -56,6 +56,9 @@ class FakeF5Device():
         self.System.SystemInfo.get_system_information = get_content(name(System.SystemInfo.get_system_information))
 
 
+    def open(self):
+        pass
+
     @staticmethod
     def get_content(filename):
         return 10
