@@ -78,15 +78,15 @@ class iControlMock():
 
     @staticmethod
     def get_marketing_name():
-        return 'BIG-IP Virtual Edition'
+        return u'BIG-IP Virtual Edition'
 
     @staticmethod
     def get_version():
-        return 'BIG-IP_v13.0.0'
+        return u'BIG-IP_v13.0.0'
 
     @staticmethod
     def get_hostname():
-        return 'BIG-IP_v13.0.0'
+        return u'BIG-IP_v13.0.0'
 
     @staticmethod
     def get_system_information():
