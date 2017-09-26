@@ -63,32 +63,32 @@ class FakeF5Device():
         def __init__(self):
             self.SystemInfo = self.SystemInfo()
 
-    class SystemInfo():
-        def __init__(self):
-            pass
-        def get_hostname(self):
-            return u'BIG-IP_v13.0.0'
-        def get_marketing_name(self):
-            return u'BIG-IP Virtual Edition'
-        def get_uptime(self):
-            return 2
-        def get_version(self):
-            return '13'
-        def get_system_information(self):
-            return {   'annunciator_board_part_revision': None,
-    'annunciator_board_serial': None,
-    'chassis_serial': '4225052f-6da8-a9c6-ae4b3609da29',
-    'host_board_part_revision': None,
-    'host_board_serial': None,
-    'host_name': 'localhost.localdomain',
-    'os_machine': 'x86_64',
-    'os_release': '3.10.0-327.36.3.el7.ve.x86_64',
-    'os_version': '#1 SMP Tue Jan 31 16:09:28 PST 2017',
-    'platform': 'Z100',
-    'product_category': 'Virtual Edition',
-    'switch_board_part_revision': None,
-    'switch_board_serial': None,
-    'system_name': 'Linux'}
+        class SystemInfo():
+            def __init__(self):
+                pass
+            def get_hostname(self):
+                return u'BIG-IP_v13.0.0'
+            def get_marketing_name(self):
+                return u'BIG-IP Virtual Edition'
+            def get_uptime(self):
+                return 2
+            def get_version(self):
+                return '13'
+            def get_system_information(self):
+                return {   'annunciator_board_part_revision': None,
+        'annunciator_board_serial': None,
+        'chassis_serial': '4225052f-6da8-a9c6-ae4b3609da29',
+        'host_board_part_revision': None,
+        'host_board_serial': None,
+        'host_name': 'localhost.localdomain',
+        'os_machine': 'x86_64',
+        'os_release': '3.10.0-327.36.3.el7.ve.x86_64',
+        'os_version': '#1 SMP Tue Jan 31 16:09:28 PST 2017',
+        'platform': 'Z100',
+        'product_category': 'Virtual Edition',
+        'switch_board_part_revision': None,
+        'switch_board_serial': None,
+        'system_name': 'Linux'}
 
     def open(self):
         pass
