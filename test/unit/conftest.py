@@ -1,5 +1,7 @@
 """Test fixtures."""
 from builtins import super
+from mock import Mock
+
 
 import pytest
 from napalm_base.test import conftest as parent_conftest
