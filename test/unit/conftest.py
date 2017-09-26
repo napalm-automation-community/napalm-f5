@@ -39,6 +39,7 @@ class PatchedF5Driver(f5.F5Driver):
 
         self.patched_attrs = ['device']
         self.device = FakeF5Device()
+        self.devices = None
 
     def open(self):
         pass
@@ -67,6 +68,7 @@ class FakeF5Device():
     @staticmethod
     def name(orig_name):
         name = orig_name.replace('.', '_').lower()
+
 
 class iControlMock():
     @staticmethod
