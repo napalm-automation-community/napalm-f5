@@ -39,7 +39,7 @@ class PatchedF5Driver(f5.F5Driver):
 
         self.patched_attrs = ['device']
         self.device = FakeF5Device()
-        #self.devices = None
+        self.devices = None
 
     def open(self):
         pass
@@ -49,7 +49,6 @@ class FakeF5Device():
     """F5 device test double."""
 
     def __init__(self):
-        pass
         self.Management = Mock()
         self.Networking = Mock()
         self.System = Mock()
