@@ -42,20 +42,24 @@ class PatchedF5Driver(f5.F5Driver):
         pass
 
 
-class FakeF5Device(BaseTestDouble):
+class FakeF5Device():
     """F5 device test double."""
 
-    def run_commands(self, command_list, encoding='json'):
-        """Fake run_commands."""
-        result = list()
+    def __init__(self):
+        self.Management = Mock()
+        self.Networking = Mock()
+        self.System = Mock()
 
-        for command in command_list:
-            filename = '{}.{}'.format(self.sanitize_text(command), encoding)
-            full_path = self.find_file(filename)
+        self.System.SystemInfo.get_marketing_name = get_content(name(System.SystemInfo.get_marketing_name))
+        self.System.SystemInfo.get_uptime = get_content(name(System.SystemInfo.get_uptime))
+        self.System.SystemInfo.get_version = get_content(name(System.SystemInfo.get_version))
+        self.System.SystemInfo.get_system_information = get_content(name(System.SystemInfo.get_system_information))
 
-            if encoding == 'json':
-                result.append(self.read_json_file(full_path))
-            else:
-                result.append({'output': self.read_txt_file(full_path)})
 
-        return result
+    @staticmethod
+    def get_content(filename):
+        return 10
+
+    @staticmethod
+    def name(orig_name):
+        name = orig_name.replace('.', '_').lower()
