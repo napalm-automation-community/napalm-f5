@@ -52,10 +52,10 @@ class FakeF5Device():
         pass
     #    self.Management = Mock()
     #    self.Networking = Mock()
-    #    self.System = Mock()
+        self.System = Mock()
 
     #    self.System.SystemInfo.get_marketing_name = iControlMock.get_marketing_name
-    #    self.System.SystemInfo.get_uptime = iControlMock.get_uptime
+        self.System.SystemInfo.get_uptime = iControlMock.get_uptime
     #    self.System.SystemInfo.get_version = iControlMock.get_version
     #    self.System.SystemInfo.get_system_information = iControlMock.get_system_information
 
