@@ -52,20 +52,18 @@ class FakeF5Device():
         self.Networking = Mock()
         self.System = Mock()
 
-        self.System.SystemInfo.get_marketing_name = self.get_content(self.name('System.SystemInfo.get_marketing_name'))
-        self.System.SystemInfo.get_uptime = self.name(10)
-        self.System.SystemInfo.get_version = self.get_content(self.name('System.SystemInfo.get_version'))
-        self.System.SystemInfo.get_system_information = self.get_content(self.name('System.SystemInfo.get_system_information'))
-
+        self.System.SystemInfo.get_marketing_name = 'BIG-IP Virtual Edition'
+        self.System.SystemInfo.get_uptime = 1457282
+        self.System.SystemInfo.get_version = 'BIG-IP_v13.0.0'
+        self.System.SystemInfo.get_system_information = {}
 
     def open(self):
         pass
 
     @staticmethod
-    def get_content(filename):
+    def get_content(**kwargs):
         return 10
 
     @staticmethod
     def name(orig_name):
         name = orig_name.replace('.', '_').lower()
-        return 10
