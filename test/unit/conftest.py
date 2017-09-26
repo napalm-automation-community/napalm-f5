@@ -73,17 +73,30 @@ class FakeF5Device():
 class iControlMock():
     @staticmethod
     def get_uptime():
-        return True
+        return 1457282
 
     @staticmethod
     def get_marketing_name():
-        return True
+        return 'BIG-IP Virtual Edition'
 
     @staticmethod
     def get_version():
-        return True
+        return 'BIG-IP_v13.0.0'
 
     @staticmethod
     def get_system_information():
-        return True
+        return {   'annunciator_board_part_revision': None,
+    'annunciator_board_serial': None,
+    'chassis_serial': '4225052f-6da8-a9c6-ae4b3609da29',
+    'host_board_part_revision': None,
+    'host_board_serial': None,
+    'host_name': 'localhost.localdomain',
+    'os_machine': 'x86_64',
+    'os_release': '3.10.0-327.36.3.el7.ve.x86_64',
+    'os_version': '#1 SMP Tue Jan 31 16:09:28 PST 2017',
+    'platform': 'Z100',
+    'product_category': 'Virtual Edition',
+    'switch_board_part_revision': None,
+    'switch_board_serial': None,
+    'system_name': 'Linux'}
 
