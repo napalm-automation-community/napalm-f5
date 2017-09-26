@@ -61,7 +61,7 @@ class FakeF5Device():
 
     class System():
         def __init__(self):
-            self.SystemInfo = SystemInfo()
+            self.SystemInfo = self.SystemInfo()
 
     class SystemInfo():
         def __init__(self):
