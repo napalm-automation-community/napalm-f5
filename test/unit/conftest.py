@@ -74,7 +74,7 @@ class FakeF5Device():
 class iControlMock():
     @staticmethod
     def get_uptime():
-        return 1457282
+        return 2
 
     @staticmethod
     def get_marketing_name():

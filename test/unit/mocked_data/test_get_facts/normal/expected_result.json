@@ -1,3 +1,12 @@
 {
-  "uptime": "1457282"
+  "uptime": 2,
+  "vendor": "F5",
+  "hostname": "f5",
+  "fqdn": "f5",
+  "os_version": "13.0.0",
+  "serial_number": "TM6017D760B",
+  "model": "viprion",
+  "interface_list": [
+    "mgmt0"
+  ]
 }
