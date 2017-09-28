@@ -49,7 +49,7 @@ class FakeF5Device():
     """F5 device test double."""
 
     def __init__(self):
-        #self.Management = self.Management()
+        self.Management = self.Management()
         #self.Networking = self.Networking()
         self.System = self.System()
 
@@ -58,6 +58,17 @@ class FakeF5Device():
         #self.System.SystemInfo.get_uptime = iControlMock.get_uptime
         #self.System.SystemInfo.get_version = iControlMock.get_version
         #self.System.SystemInfo.get_system_information = iControlMock.get_system_information
+
+
+    class Management():
+        def __init__(self):
+            self.Device = self.Device()
+
+        class Device():
+            def __init__(self):
+                pass
+            def get_hostname(self):
+                pass
 
     class System():
         def __init__(self):
