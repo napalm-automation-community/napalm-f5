@@ -100,3 +100,23 @@ class FakeIControl:
     def get_system_information(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("System.SystemInfo.get_system_information"))
+
+    def get_enabled_state(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_enabled_state"))
+
+    def get_mac_address(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_mac_address"))
+
+    def get_active_media(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_active_media"))
+
+    def get_media_status(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_media_status"))
+
+    def get_description(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_description"))
