@@ -21,9 +21,8 @@ import base64
 import os
 
 import bigsuds
-
 from napalm_base.base import NetworkDriver
-from napalm_base.exceptions import ConnectionException,\
+from napalm_base.exceptions import ConnectionException, \
     MergeConfigException, ReplaceConfigException
 
 from napalm_f5.exceptions import CommitConfigException, DiscardConfigException
@@ -99,33 +98,33 @@ class F5Driver(NetworkDriver):
         except bigsuds.OperationFailed as err:
             raise DiscardConfigException('{}'.format(err))
 
-    #def _get_uptime(self):
-    #    return self.device.System.SystemInfo.get_uptime()
+    def _get_uptime(self):
+        return self.device.System.SystemInfo.get_uptime()
 
-    #def _get_version(self):
-    #    return self.device.System.SystemInfo.get_version()
+    def _get_version(self):
+        return self.device.System.SystemInfo.get_version()
 
-    #def _get_serial_number(self):
-    #    system_information = self.device.System.SystemInfo.get_system_information()
-    #    chassis_serial = system_information['chassis_serial']
-    #    return chassis_serial
+    def _get_serial_number(self):
+        system_information = self.device.System.SystemInfo.get_system_information()
+        chassis_serial = system_information['chassis_serial']
+        return chassis_serial
 
-    #def _get_model(self):
-    #    return self.device.System.SystemInfo.get_marketing_name()
+    def _get_model(self):
+        return self.device.System.SystemInfo.get_marketing_name()
 
-    #def _get_hostname(self):
-    #    return self.device.Management.Device.get_hostname(self.devices)
+    def _get_hostname(self):
+        return self.device.Management.Device.get_hostname(self.devices)[0]
 
     def get_facts(self):
         facts = {
-            #'uptime': self._get_uptime(),
+            'uptime': self._get_uptime(),
             'vendor': 'F5 Networks',
-            #'model': self._get_model(),
-            #'hostname': self._get_hostname(),
-            #'fqdn': self._get_hostname(),
-            #'os_version': self._get_version(),
-            #'serial_number': self._get_serial_number(),
-            #'interface_list': self._get_interfaces_list()
+            'model': self._get_model(),
+            'hostname': self._get_hostname(),
+            'fqdn': self._get_hostname(),
+            'os_version': self._get_version(),
+            'serial_number': self._get_serial_number(),
+            'interface_list': self._get_interfaces_list()
         }
         return facts
 
@@ -178,20 +177,20 @@ class F5Driver(NetworkDriver):
                 'speed': active_media,
                 'mac_address': mac_address,
             } for (
-                interface_name,
-                media_status,
-                enabled_state,
-                description,
-                mac_address,
-                active_media
-            ) in zip(
-                interfaces,
-                media_status,
-                enabled_state,
-                description,
-                mac_address,
-                active_media
-            )
+            interface_name,
+            media_status,
+            enabled_state,
+            description,
+            mac_address,
+            active_media
+        ) in zip(
+            interfaces,
+            media_status,
+            enabled_state,
+            description,
+            mac_address,
+            active_media
+        )
         }
 
         return interfaces_dict
@@ -232,4 +231,3 @@ class F5Driver(NetworkDriver):
             raise Exception('ConfigSync API Error: {}'.format(e.message))
         except EnvironmentError as e:
             raise Exception('Error ({}): {}'.format(e.errno, e.strerror))
-

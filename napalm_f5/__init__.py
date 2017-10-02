@@ -13,4 +13,4 @@
 # the License.
 
 """napalm-f5 package."""
-from f5 import F5Driver
+from napalm_f5.f5 import F5Driver
