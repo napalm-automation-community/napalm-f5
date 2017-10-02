@@ -158,6 +158,19 @@ class F5Driver(NetworkDriver):
         return description
 
     def get_interfaces(self):
+        def if_speed(active_media):
+            if '100000' in active_media:
+                return 100000
+            elif '40000' in active_media:
+                return 40000
+            elif '10000' in active_media:
+                return 10000
+            elif '1000' in active_media:
+                return 1000
+            elif '100' in active_media:
+                return 100
+            else:
+                return -1
         try:
             interfaces = self._get_interfaces_list()
             active_media = self._get_interfaces_active_media(interfaces)
@@ -173,8 +186,8 @@ class F5Driver(NetworkDriver):
                 'is_up': True if media_status == 'MEDIA_STATUS_UP' else False,
                 'is_enabled': True if enabled_state == 'STATE_ENABLED' else False,
                 'description': description,
-                'last_flapped': None,
-                'speed': active_media,
+                'last_flapped': -1.0,
+                'speed': if_speed(active_media),
                 'mac_address': mac_address,
             } for (
             interface_name,

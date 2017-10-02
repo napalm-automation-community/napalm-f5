@@ -51,15 +51,21 @@ class FakeF5Device(BaseTestDouble):
     """F5 device test double."""
 
     def __init__(self):
-        self.System = self.Management = self.Networking = Mock()
         self.icr = FakeIControl(self)
+        self.Management = Mock()
+        self.Networking = Mock()
+        self.System = Mock()
         self.Management.Device.get_hostname = self.icr.get_hostname
+        self.Networking.Interfaces.get_active_media = self.icr.get_active_media
+        self.Networking.Interfaces.get_description = self.icr.get_description
+        self.Networking.Interfaces.get_enabled_state = self.icr.get_enabled_state
         self.Networking.Interfaces.get_list = self.icr.get_list
-        self.System.SystemInfo.get_system_information = self.icr.get_system_information
+        self.Networking.Interfaces.get_mac_address = self.icr.get_mac_address
+        self.Networking.Interfaces.get_media_status = self.icr.get_media_status
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
+        self.System.SystemInfo.get_system_information = self.icr.get_system_information
         self.System.SystemInfo.get_uptime = self.icr.get_uptime
         self.System.SystemInfo.get_version = self.icr.get_version
-
 
 class FakeIControl:
     """ Patched iControl handler (F5's API) """
