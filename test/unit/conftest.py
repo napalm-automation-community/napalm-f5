@@ -62,10 +62,12 @@ class FakeF5Device(BaseTestDouble):
         self.Networking.Interfaces.get_list = self.icr.get_list
         self.Networking.Interfaces.get_mac_address = self.icr.get_mac_address
         self.Networking.Interfaces.get_media_status = self.icr.get_media_status
+        self.Networking.Interfaces.get_all_statistics = self.icr.get_all_statistics
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
         self.System.SystemInfo.get_system_information = self.icr.get_system_information
         self.System.SystemInfo.get_uptime = self.icr.get_uptime
         self.System.SystemInfo.get_version = self.icr.get_version
+
 
 class FakeIControl:
     """ Patched iControl handler (F5's API) """
@@ -87,42 +89,58 @@ class FakeIControl:
 
     def get_list(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_list"))
+            self.get_from_file("Networking.Interfaces.get_list")
+        )
 
     def get_hostname(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Management.Device.get_hostname"))
+            self.get_from_file("Management.Device.get_hostname")
+        )
 
     def get_uptime(self, *args, **kwargs):
-        return int(self.get_from_file("System.SystemInfo.get_uptime"))
+        return int(self.get_from_file("System.SystemInfo.get_uptime")
+                   )
 
     def get_marketing_name(self, *args, **kwargs):
         return self._str(
-            self.get_from_file("System.SystemInfo.get_marketing_name"))
+            self.get_from_file("System.SystemInfo.get_marketing_name")
+        )
 
     def get_version(self, *args, **kwargs):
-        return self._str(self.get_from_file("System.SystemInfo.get_version"))
+        return self._str(self.get_from_file("System.SystemInfo.get_version")
+                         )
 
     def get_system_information(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("System.SystemInfo.get_system_information"))
+            self.get_from_file("System.SystemInfo.get_system_information")
+        )
 
     def get_enabled_state(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_enabled_state"))
+            self.get_from_file("Networking.Interfaces.get_enabled_state")
+        )
 
     def get_mac_address(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_mac_address"))
+            self.get_from_file("Networking.Interfaces.get_mac_address")
+        )
 
     def get_active_media(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_active_media"))
+            self.get_from_file("Networking.Interfaces.get_active_media")
+        )
 
     def get_media_status(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_media_status"))
+            self.get_from_file("Networking.Interfaces.get_media_status")
+        )
 
     def get_description(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Networking.Interfaces.get_description"))
+            self.get_from_file("Networking.Interfaces.get_description")
+        )
+
+    def get_all_statistics(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.Interfaces.get_all_statistics")
+        )

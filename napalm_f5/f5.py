@@ -157,6 +157,55 @@ class F5Driver(NetworkDriver):
             interfaces)
         return description
 
+    def _get_interfaces_all_statistics(self):
+        statistcs = self.device.Networking.Interfaces.get_all_statistics()
+        return statistcs
+
+    def _get_active_media(self, interfaces):
+        active_media = self.device.Networking.Interfaces.get_active_media(interfaces)
+        return active_media
+
+    def get_interfaces_counters(self):
+        try:
+            icr_statistics = self._get_interfaces_all_statistics()
+        except bigsuds.OperationFailed as err:
+            raise Exception('get_interfaces: {}'.format(err))
+
+        counters = {}
+        for x in icr_statistics['statistics']:
+            if_name = x['interface_name']
+            counters[if_name] = {}
+            counters[if_name]['tx_broadcast_packets'] = -1
+            counters[if_name]['rx_broadcast_packets'] = -1
+
+            for stat in x['statistics']:
+                if stat['type'] == 'STATISTIC_ERRORS_IN':
+                    counters[if_name]['rx_errors'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_ERRORS_OUT':
+                    counters[if_name]['tx_errors'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_IN':
+                    counters[if_name]['rx_discards'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_OUT':
+                    counters[if_name]['tx_discards'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_BYTES_IN':
+                    counters[if_name]['rx_octets'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_BYTES_OUT':
+                    counters[if_name]['tx_octets'] = stat['value']['low']
+                elif stat['type'] == 'STATISTIC_PACKETS_IN':
+                    counters[if_name]['rx_unicast_packets'] = stat['value'][
+                        'low']
+                elif stat['type'] == 'STATISTIC_PACKETS_OUT':
+                    counters[if_name]['tx_unicast_packets'] = stat['value'][
+                        'low']
+                elif stat['type'] == 'STATISTIC_MULTICASTS_IN':
+                    counters[if_name]['rx_multicast_packets'] = stat['value'][
+                        'low']
+                elif stat['type'] == 'STATISTIC_MULTICASTS_OUT':
+                    counters[if_name]['tx_multicast_packets'] = stat['value'][
+                        'low']
+
+        return counters
+
     def get_interfaces(self):
         def if_speed(active_media):
             if '100000' in active_media:
