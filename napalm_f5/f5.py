@@ -165,6 +165,35 @@ class F5Driver(NetworkDriver):
         active_media = self.device.Networking.Interfaces.get_active_media(interfaces)
         return active_media
 
+    def _get_system_information(self):
+        system_information = self.device.Management.SNMPConfiguration.get_system_information()
+        return system_information
+
+    def get_snmp_information(self):
+        sys_info = self._get_system_information()
+        snmp_info = {
+            'contact': sys_info['sys_contact'] or '',
+            'location': sys_info['sys_location'] or '',
+            'chassis_id': sys_info['sys_description'] or '',
+            'community': {},
+        }
+        ro_comm = self.device.Management.SNMPConfiguration.get_readonly_community()
+        rw_comm = self.device.Management.SNMPConfiguration.get_readwrite_community()
+
+        for x in ro_comm:
+            snmp_info['community'][x['community']] = {
+                'acl': x['source'] or 'N/A',
+                'mode': 'ro',
+            }
+
+        for x in rw_comm:
+            snmp_info['community'][x['community']] = {
+                'acl': x['source'] or 'N/A',
+                'mode': 'rw',
+            }
+
+        return snmp_info
+
     def get_interfaces_counters(self):
         try:
             icr_statistics = self._get_interfaces_all_statistics()
