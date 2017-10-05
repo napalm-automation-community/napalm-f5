@@ -1,0 +1,1 @@
+{'sys_description': None, 'sys_location': 'Network Closet 1', 'sys_contact': 'asd', 'sys_services': 78, 'sys_object_id': None, 'sys_name': None}

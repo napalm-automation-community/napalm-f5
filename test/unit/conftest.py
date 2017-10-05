@@ -56,6 +56,9 @@ class FakeF5Device(BaseTestDouble):
         self.Networking = Mock()
         self.System = Mock()
         self.Management.Device.get_hostname = self.icr.get_hostname
+        self.Management.SNMPConfiguration.get_readonly_community = self.icr.get_readonly_community
+        self.Management.SNMPConfiguration.get_readwrite_community = self.icr.get_readwrite_community
+        self.Management.SNMPConfiguration.get_system_information = self.icr.get_snmp_system_information
         self.Networking.Interfaces.get_active_media = self.icr.get_active_media
         self.Networking.Interfaces.get_description = self.icr.get_description
         self.Networking.Interfaces.get_enabled_state = self.icr.get_enabled_state
@@ -143,4 +146,19 @@ class FakeIControl:
     def get_all_statistics(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("Networking.Interfaces.get_all_statistics")
+        )
+
+    def get_snmp_system_information(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Management.SNMPConfiguration.get_system_information")
+        )
+
+    def get_readonly_community(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Management.SNMPConfiguration.get_readonly_community")
+        )
+
+    def get_readwrite_community(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Management.SNMPConfiguration.get_readwrite_community")
         )
