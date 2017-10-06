@@ -68,6 +68,9 @@ class FakeF5Device(BaseTestDouble):
         self.Networking.Interfaces.get_mac_address = self.icr.get_mac_address
         self.Networking.Interfaces.get_media_status = self.icr.get_media_status
         self.Networking.Interfaces.get_all_statistics = self.icr.get_all_statistics
+        self.Networking.SelfIPV2.get_address = self.icr.get_self_address
+        self.Networking.SelfIPV2.get_list = self.icr.get_self_list
+        self.Networking.SelfIPV2.get_netmask = self.icr.get_self_netmask
         self.System.Inet.get_ntp_server_address = self.icr.get_ntp_servers
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
         self.System.SystemInfo.get_system_information = self.icr.get_system_information
@@ -179,4 +182,19 @@ class FakeIControl:
     def get_ntp_servers(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("System.Inet.get_ntp_server_address")
+        )
+
+    def get_self_address(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.SelfIPV2.get_address")
+        )
+
+    def get_self_list(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.SelfIPV2.get_list")
+        )
+
+    def get_self_netmask(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.SelfIPV2.get_netmask")
         )

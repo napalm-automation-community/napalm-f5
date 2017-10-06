@@ -162,7 +162,8 @@ class F5Driver(NetworkDriver):
         return statistcs
 
     def _get_active_media(self, interfaces):
-        active_media = self.device.Networking.Interfaces.get_active_media(interfaces)
+        active_media = self.device.Networking.Interfaces.get_active_media(
+            interfaces)
         return active_media
 
     def _get_system_information(self):
@@ -197,7 +198,8 @@ class F5Driver(NetworkDriver):
     def get_users(self):
         api_users = self.device.Management.UserManagement.get_list()
         usernames = [x['name'] for x in api_users]
-        passwords = self.device.Management.UserManagement.get_encrypted_password(usernames)
+        passwords = self.device.Management.UserManagement.get_encrypted_password(
+            usernames)
         users_dict = {
             username: {
                 'level': 0,
@@ -210,6 +212,44 @@ class F5Driver(NetworkDriver):
     def get_ntp_servers(self):
         return {server: {} for server in
                 self.device.System.Inet.get_ntp_server_address()}
+
+    def get_interfaces_ip(self):
+        def _get_prefix_length(netmask):
+            if ":" in netmask:
+                if netmask.endswith("::"):
+                    netmask = netmask.replace("::", "")
+                return sum(
+                    [bin(int(x, 16)).count("1") for x in netmask.split(":")])
+            else:
+                return sum([bin(int(x)).count("1") for x in netmask.split(".")])
+
+        net_selfs = self.device.Networking.SelfIPV2.get_list()
+        ips = self.device.Networking.SelfIPV2.get_address(net_selfs)
+        netmasks = self.device.Networking.SelfIPV2.get_netmask(net_selfs)
+        prefixes = list(map(_get_prefix_length, netmasks))
+
+        interfaces_ip = {}
+
+        for net_self in zip(net_selfs, ips, prefixes):
+            if ':' in net_self[1]:
+                interfaces_ip[net_self[0]] = {
+                    'ipv6': {
+                        net_self[1]: {
+                            'prefix_length': net_self[2]
+                        }
+                    }
+                }
+
+            else:
+                interfaces_ip[net_self[0]] = {
+                    'ipv4': {
+                        net_self[1]: {
+                            'prefix_length': net_self[2]
+                        }
+                    }
+                }
+
+        return interfaces_ip
 
     def get_interfaces_counters(self):
         try:
@@ -266,6 +306,7 @@ class F5Driver(NetworkDriver):
                 return 100
             else:
                 return -1
+
         try:
             interfaces = self._get_interfaces_list()
             active_media = self._get_interfaces_active_media(interfaces)
