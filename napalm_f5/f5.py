@@ -194,6 +194,23 @@ class F5Driver(NetworkDriver):
 
         return snmp_info
 
+    def get_users(self):
+        api_users = self.device.Management.UserManagement.get_list()
+        usernames = [x['name'] for x in api_users]
+        passwords = self.device.Management.UserManagement.get_encrypted_password(usernames)
+        users_dict = {
+            username: {
+                'level': 0,
+                'password': password,
+                'sshkeys': [],
+            } for (username, password) in zip(usernames, passwords)
+        }
+        return users_dict
+
+    def get_ntp_servers(self):
+        return {server: {} for server in
+                self.device.System.Inet.get_ntp_server_address()}
+
     def get_interfaces_counters(self):
         try:
             icr_statistics = self._get_interfaces_all_statistics()

@@ -59,6 +59,8 @@ class FakeF5Device(BaseTestDouble):
         self.Management.SNMPConfiguration.get_readonly_community = self.icr.get_readonly_community
         self.Management.SNMPConfiguration.get_readwrite_community = self.icr.get_readwrite_community
         self.Management.SNMPConfiguration.get_system_information = self.icr.get_snmp_system_information
+        self.Management.UserManagement.get_list = self.icr.get_user_list
+        self.Management.UserManagement.get_encrypted_password = self.icr.get_encrypted_password
         self.Networking.Interfaces.get_active_media = self.icr.get_active_media
         self.Networking.Interfaces.get_description = self.icr.get_description
         self.Networking.Interfaces.get_enabled_state = self.icr.get_enabled_state
@@ -66,6 +68,7 @@ class FakeF5Device(BaseTestDouble):
         self.Networking.Interfaces.get_mac_address = self.icr.get_mac_address
         self.Networking.Interfaces.get_media_status = self.icr.get_media_status
         self.Networking.Interfaces.get_all_statistics = self.icr.get_all_statistics
+        self.System.Inet.get_ntp_server_address = self.icr.get_ntp_servers
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
         self.System.SystemInfo.get_system_information = self.icr.get_system_information
         self.System.SystemInfo.get_uptime = self.icr.get_uptime
@@ -161,4 +164,19 @@ class FakeIControl:
     def get_readwrite_community(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("Management.SNMPConfiguration.get_readwrite_community")
+        )
+
+    def get_user_list(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Management.UserManagement.get_list")
+        )
+
+    def get_encrypted_password(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Management.UserManagement.get_encrypted_password")
+        )
+
+    def get_ntp_servers(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.Inet.get_ntp_server_address")
         )
