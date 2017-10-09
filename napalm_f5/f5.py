@@ -292,7 +292,7 @@ class F5Driver(NetworkDriver):
 
         return interfaces_ip
 
-    def get_network_instances(self):
+    def get_network_instances(self, name=''):
         rd_list = self.device.Networking.RouteDomainV2.get_list()
         rd_description_list = self.device.Networking.RouteDomainV2.get_description(
             rd_list)
@@ -324,7 +324,7 @@ class F5Driver(NetworkDriver):
                 'type': 'DEFAULT_INSTANCE' if instance_name == 'default' else 'L3VRF',
             }
 
-        return instances
+        return {name: instances.get(name, {})} if name else instances
 
     def get_interfaces_counters(self):
         try:
