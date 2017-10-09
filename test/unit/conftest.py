@@ -71,6 +71,10 @@ class FakeF5Device(BaseTestDouble):
         self.Networking.SelfIPV2.get_address = self.icr.get_self_address
         self.Networking.SelfIPV2.get_list = self.icr.get_self_list
         self.Networking.SelfIPV2.get_netmask = self.icr.get_self_netmask
+        self.Networking.VLAN.get_list = self.icr.get_vlan_list
+        self.Networking.VLAN.get_vlan_id = self.icr.get_vlan_id
+        self.Networking.VLAN.get_dynamic_forwarding = self.icr.get_dynamic_forwarding
+        self.Networking.VLAN.get_static_forwarding = self.icr.get_static_forwarding
         self.System.Inet.get_ntp_server_address = self.icr.get_ntp_servers
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
         self.System.SystemInfo.get_system_information = self.icr.get_system_information
@@ -198,3 +202,22 @@ class FakeIControl:
         return ast.literal_eval(
             self.get_from_file("Networking.SelfIPV2.get_netmask")
         )
+
+    def get_vlan_list(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.VLAN.get_list")
+        )
+    def get_vlan_id(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.VLAN.get_vlan_id")
+        )
+    def get_dynamic_forwarding(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.VLAN.get_dynamic_forwarding")
+        )
+    def get_static_forwarding(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("Networking.VLAN.get_static_forwarding")
+        )
+
+

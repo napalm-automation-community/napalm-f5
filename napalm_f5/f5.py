@@ -195,6 +195,48 @@ class F5Driver(NetworkDriver):
 
         return snmp_info
 
+    def get_mac_address_table(self):
+        vlan_list = self.device.Networking.VLAN.get_list()
+        vlan_ids = self.device.Networking.VLAN.get_vlan_id(vlan_list)
+        dynamic_mac_list = self.device.Networking.VLAN.get_dynamic_forwarding(
+            vlan_list)
+        static_mac_list = self.device.Networking.VLAN.get_static_forwarding(
+            vlan_list)
+
+        mac_list = list()
+
+        for vlan_id, vlan, dynamic_entry in zip(vlan_ids, vlan_list,
+                                                dynamic_mac_list):
+            for fdb in dynamic_entry:
+                mac_list.append(
+                    {
+                        'mac': fdb['mac_address'],
+                        'interface': vlan,
+                        'vlan': vlan_id,
+                        'static': False,
+                        'active': True,
+                        'moves': 0,
+                        'last_move': 0.0,
+                    }
+                )
+
+        for vlan_id, vlan, static_entry in zip(vlan_ids, vlan_list,
+                                               static_mac_list):
+            for fdb in static_entry:
+                mac_list.append(
+                    {
+                        'mac': fdb['mac_address'],
+                        'interface': vlan,
+                        'vlan': vlan_id,
+                        'static': True,
+                        'active': True,
+                        'moves': 0,
+                        'last_move': 0.0,
+                    }
+                )
+
+        return mac_list
+
     def get_users(self):
         api_users = self.device.Management.UserManagement.get_list()
         usernames = [x['name'] for x in api_users]
@@ -239,7 +281,6 @@ class F5Driver(NetworkDriver):
                         }
                     }
                 }
-
             else:
                 interfaces_ip[net_self[0]] = {
                     'ipv4': {
