@@ -1,0 +1,1 @@
+{"default": {"interfaces": {"interface": {"/Common/http-tunnel": {}, "/Common/mzb": {}, "/Common/socks-tunnel": {}}}, "type": "DEFAULT_INSTANCE", "state": {"route_distinguisher": "0"}, "name": "default"}, "test_rd": {"interfaces": {"interface": {"/Common/test_vlan": {}}}, "type": "L3VRF", "state": {"route_distinguisher": "99"}, "name": "test_rd"}}

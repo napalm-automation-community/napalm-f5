@@ -292,6 +292,40 @@ class F5Driver(NetworkDriver):
 
         return interfaces_ip
 
+    def get_network_instances(self):
+        rd_list = self.device.Networking.RouteDomainV2.get_list()
+        rd_description_list = self.device.Networking.RouteDomainV2.get_description(
+            rd_list)
+        rd_id_list = self.device.Networking.RouteDomainV2.get_identifier(
+            rd_list)
+        rd_vlan_list = self.device.Networking.RouteDomainV2.get_vlan(rd_list)
+
+        instances = {}
+
+        for rd, description, rd_id, rd_vlan in zip(rd_list, rd_description_list,
+                                                   rd_id_list,
+                                                   rd_vlan_list):
+            if rd.split('/')[-1] == '0':
+                instance_name = 'default'
+            else:
+                instance_name = rd.split('/')[-1]
+
+            instances[instance_name] = {
+                'interfaces': {
+                    'interface': {
+                        vlan: {
+                        } for vlan in rd_vlan
+                    }
+                },
+                'state': {
+                    'route_distinguisher': str(rd_id)
+                },
+                'name': instance_name,
+                'type': 'DEFAULT_INSTANCE' if instance_name == 'default' else 'L3VRF',
+            }
+
+        return instances
+
     def get_interfaces_counters(self):
         try:
             icr_statistics = self._get_interfaces_all_statistics()
