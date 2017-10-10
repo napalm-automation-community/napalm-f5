@@ -25,6 +25,7 @@ from napalm_base.base import NetworkDriver
 from napalm_base.exceptions import ConnectionException, \
     MergeConfigException, ReplaceConfigException
 
+from napalm_f5.env import LIMITS, ALERT
 from napalm_f5.exceptions import CommitConfigException, DiscardConfigException
 
 
@@ -38,6 +39,7 @@ class F5Driver(NetworkDriver):
 
         self.config_replace = False
         self.filename = None
+        self.device = None
 
         if optional_args is None:
             optional_args = {}
@@ -97,6 +99,12 @@ class F5Driver(NetworkDriver):
             )
         except bigsuds.OperationFailed as err:
             raise DiscardConfigException('{}'.format(err))
+
+    def is_alive(self):
+        if self.device:
+            return {'is_alive': True}
+        else:
+            return {'is_alive': False}
 
     def _get_uptime(self):
         return self.device.System.SystemInfo.get_uptime()
@@ -291,6 +299,105 @@ class F5Driver(NetworkDriver):
                 }
 
         return interfaces_ip
+
+    def get_environment(self):
+        temperature_metrics = self.device.System.SystemInfo.get_temperature_metrics()
+        blade_temperature = self.device.System.SystemInfo.get_blade_temperature()
+        fan_metrics = self.device.System.SystemInfo.get_fan_metrics()
+        memory_usage = self.device.System.SystemInfo.get_memory_usage_information()
+        global_cpu = self.device.System.SystemInfo.get_global_cpu_usage_extended_information()
+        power_supply_metrics = self.device.System.SystemInfo.get_power_supply_metrics()
+        system_information = self.device.System.SystemInfo.get_system_information()
+
+        model = "{}_{}".format(system_information['product_category'],
+                               system_information['platform'])
+
+        # TEMPERATURE metrics
+        temperatures = dict()
+        if LIMITS.has_key(model):
+            # Parse chassis / appliance temperatures
+            for sensor in temperature_metrics['temperatures']:
+                sensor_id = sensor[0]['value']
+                sensor_value = sensor[1]['value']
+
+                sensor_max = LIMITS[model][str(sensor_id)][0]
+                sensor_location = LIMITS[model][str(sensor_id)][1]
+
+                temperatures[sensor_location] = {
+                    'temperature': float(sensor_value),
+                    'is_alert': True if sensor_value >= sensor_max * ALERT else False,
+                    'is_critical': True if sensor_value >= sensor_max else False,
+                }
+            # Parse blades' temperatures
+            for sensor in blade_temperature:
+                sensor_value = sensor['temperature']
+                sensor_max = LIMITS[model][sensor['location']][0]
+
+                temperatures[sensor['location']] = {
+                    'temperature': float(sensor_value),
+                    'is_alert': True if sensor_value >= sensor_max * ALERT else False,
+                    'is_critical': True if sensor_value >= sensor_max else False,
+                }
+
+        # FAN metrics
+        # Use fan identifier as a location.
+        # (iControl API doesn't provide fans' locations.)
+        fans = {
+            fan[0]['value']: {
+                'status': True if fan[1]['value'] == 1 else False
+            } for fan in fan_metrics['fans']
+        }
+
+        # CPU metrics
+        cpu_usage = -1
+        for stat in global_cpu['statistics']:
+            if stat['type'] == 'STATISTIC_CPU_INFO_ONE_MIN_AVG_USAGE_RATIO':
+                cpu_usage = stat['value']['low']
+
+        cpus = {
+            '0': {'%usage':
+                      float(cpu_usage)
+                  }
+        }
+
+        # Power Supply metrics
+        power = dict()
+        for ps in power_supply_metrics['power_supplies']:
+            for metric in ps:
+                if metric['metric_type'] == 'PS_INDEX':
+                    ps_index = metric['value']
+                elif metric['metric_type'] == 'PS_STATE':
+                    ps_state = metric['value']
+                elif metric['metric_type'] == 'PS_INPUT_STATE':
+                    ps_input_state = metric['value']
+                elif metric['metric_type'] == 'PS_OUTPUT_STATE':
+                    ps_output_state = metric['value']
+                elif metric['metric_type'] == 'PS_FAN_STATE':
+                    ps_fan_state = metric['value']
+
+            power[ps_index] = {
+                'status': True if all(v > 0 for v in
+                                      [ps_index, ps_state, ps_input_state,
+                                       ps_output_state,
+                                       ps_fan_state]) else False,
+                'output': -1.0,
+                'capacity': -1.0,
+            }
+
+        memory = {
+            "available_ram": -1,
+            "used_ram": -1,
+        }
+
+        env_dict = {
+            'memory': memory,
+            'power': power,
+            'cpu': cpus,
+            'temperature': temperatures,
+            'fans': fans,
+        }
+
+        return env_dict
 
     def get_network_instances(self, name=''):
         rd_list = self.device.Networking.RouteDomainV2.get_list()
