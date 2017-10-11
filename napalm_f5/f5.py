@@ -304,7 +304,7 @@ class F5Driver(NetworkDriver):
         temperature_metrics = self.device.System.SystemInfo.get_temperature_metrics()
         blade_temperature = self.device.System.SystemInfo.get_blade_temperature()
         fan_metrics = self.device.System.SystemInfo.get_fan_metrics()
-        memory_usage = self.device.System.SystemInfo.get_memory_usage_information()
+        all_host_statistics = self.device.System.Statistics.get_all_host_statistics()
         global_cpu = self.device.System.SystemInfo.get_global_cpu_usage_extended_information()
         power_supply_metrics = self.device.System.SystemInfo.get_power_supply_metrics()
         system_information = self.device.System.SystemInfo.get_system_information()
@@ -352,7 +352,7 @@ class F5Driver(NetworkDriver):
         cpu_usage = -1
         for stat in global_cpu['statistics']:
             if stat['type'] == 'STATISTIC_CPU_INFO_ONE_MIN_AVG_USAGE_RATIO':
-                cpu_usage = stat['value']['low']
+                cpu_usage = self.convert_to_64_bit(stat['value'])
 
         cpus = {
             '0': {'%usage':
@@ -384,9 +384,19 @@ class F5Driver(NetworkDriver):
                 'capacity': -1.0,
             }
 
+        total_ram = 0
+        used_ram = 0
+        for host in all_host_statistics['statistics']:
+            for stat in host['statistics']:
+                if stat['type'] == 'STATISTIC_MEMORY_TOTAL_BYTES':
+                    total_ram = total_ram + self.convert_to_64_bit(
+                        stat['value'])
+                elif stat['type'] == 'STATISTIC_MEMORY_USED_BYTES':
+                    used_ram = used_ram + self.convert_to_64_bit(stat['value'])
+
         memory = {
-            "available_ram": -1,
-            "used_ram": -1,
+            "available_ram": total_ram - used_ram,
+            "used_ram": used_ram,
         }
 
         env_dict = {
@@ -448,29 +458,39 @@ class F5Driver(NetworkDriver):
 
             for stat in x['statistics']:
                 if stat['type'] == 'STATISTIC_ERRORS_IN':
-                    counters[if_name]['rx_errors'] = stat['value']['low']
+                    counters[if_name]['rx_errors'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_ERRORS_OUT':
-                    counters[if_name]['tx_errors'] = stat['value']['low']
+                    counters[if_name]['tx_errors'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_IN':
-                    counters[if_name]['rx_discards'] = stat['value']['low']
+                    counters[if_name]['rx_discards'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_OUT':
-                    counters[if_name]['tx_discards'] = stat['value']['low']
+                    counters[if_name]['tx_discards'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_BYTES_IN':
-                    counters[if_name]['rx_octets'] = stat['value']['low']
+                    counters[if_name]['rx_octets'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_BYTES_OUT':
-                    counters[if_name]['tx_octets'] = stat['value']['low']
+                    counters[if_name]['tx_octets'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_PACKETS_IN':
-                    counters[if_name]['rx_unicast_packets'] = stat['value'][
-                        'low']
+                    counters[if_name][
+                        'rx_unicast_packets'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_PACKETS_OUT':
-                    counters[if_name]['tx_unicast_packets'] = stat['value'][
-                        'low']
+                    counters[if_name][
+                        'tx_unicast_packets'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_MULTICASTS_IN':
-                    counters[if_name]['rx_multicast_packets'] = stat['value'][
-                        'low']
+                    counters[if_name][
+                        'rx_multicast_packets'] = self.convert_to_64_bit(
+                        stat['value'])
                 elif stat['type'] == 'STATISTIC_MULTICASTS_OUT':
-                    counters[if_name]['tx_multicast_packets'] = stat['value'][
-                        'low']
+                    counters[if_name][
+                        'tx_multicast_packets'] = self.convert_to_64_bit(
+                        stat['value'])
 
         return counters
 
@@ -525,6 +545,22 @@ class F5Driver(NetworkDriver):
         }
 
         return interfaces_dict
+
+    @staticmethod
+    def convert_to_64_bit(value):
+        """ Converts two 32 bit signed integers to a 64-bit unsigned integer.
+            https://devcentral.f5.com/questions/high-and-low-bits-of-64-bit-long-and-c
+            by mhite.
+        """
+        high = value['high']
+        low = value['low']
+        if high < 0:
+            high = high + (1 << 32)
+        if low < 0:
+            low = low + (1 << 32)
+        value = int((high << 32) | low)
+        assert (value >= 0)
+        return value
 
     def _upload_scf(self, fp):
         try:
