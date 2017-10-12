@@ -314,7 +314,7 @@ class F5Driver(NetworkDriver):
 
         # TEMPERATURE metrics
         temperatures = dict()
-        if LIMITS.has_key(model):
+        if model in LIMITS:
             # Parse chassis / appliance temperatures
             for sensor in temperature_metrics['temperatures']:
                 sensor_id = sensor[0]['value']

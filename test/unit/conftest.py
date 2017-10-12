@@ -80,10 +80,16 @@ class FakeF5Device(BaseTestDouble):
         self.Networking.VLAN.get_dynamic_forwarding = self.icr.get_dynamic_forwarding
         self.Networking.VLAN.get_static_forwarding = self.icr.get_static_forwarding
         self.System.Inet.get_ntp_server_address = self.icr.get_ntp_servers
+        self.System.Statistics.get_all_host_statistics = self.icr.get_all_host_statistics
         self.System.SystemInfo.get_marketing_name = self.icr.get_marketing_name
         self.System.SystemInfo.get_system_information = self.icr.get_system_information
         self.System.SystemInfo.get_uptime = self.icr.get_uptime
         self.System.SystemInfo.get_version = self.icr.get_version
+        self.System.SystemInfo.get_temperature_metrics = self.icr.get_temperature_metrics
+        self.System.SystemInfo.get_blade_temperature = self.icr.get_blade_temperature
+        self.System.SystemInfo.get_fan_metrics = self.icr.get_fan_metrics
+        self.System.SystemInfo.get_global_cpu_usage_extended_information = self.icr.get_global_cpu_usage_extended_information
+        self.System.SystemInfo.get_power_supply_metrics = self.icr.get_power_supply_metrics
 
 
 class FakeIControl:
@@ -164,17 +170,20 @@ class FakeIControl:
 
     def get_snmp_system_information(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Management.SNMPConfiguration.get_system_information")
+            self.get_from_file(
+                "Management.SNMPConfiguration.get_system_information")
         )
 
     def get_readonly_community(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Management.SNMPConfiguration.get_readonly_community")
+            self.get_from_file(
+                "Management.SNMPConfiguration.get_readonly_community")
         )
 
     def get_readwrite_community(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Management.SNMPConfiguration.get_readwrite_community")
+            self.get_from_file(
+                "Management.SNMPConfiguration.get_readwrite_community")
         )
 
     def get_user_list(self, *args, **kwargs):
@@ -184,7 +193,8 @@ class FakeIControl:
 
     def get_encrypted_password(self, *args, **kwargs):
         return ast.literal_eval(
-            self.get_from_file("Management.UserManagement.get_encrypted_password")
+            self.get_from_file(
+                "Management.UserManagement.get_encrypted_password")
         )
 
     def get_ntp_servers(self, *args, **kwargs):
@@ -211,14 +221,17 @@ class FakeIControl:
         return ast.literal_eval(
             self.get_from_file("Networking.VLAN.get_list")
         )
+
     def get_vlan_id(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("Networking.VLAN.get_vlan_id")
         )
+
     def get_dynamic_forwarding(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("Networking.VLAN.get_dynamic_forwarding")
         )
+
     def get_static_forwarding(self, *args, **kwargs):
         return ast.literal_eval(
             self.get_from_file("Networking.VLAN.get_static_forwarding")
@@ -244,3 +257,33 @@ class FakeIControl:
             self.get_from_file("Networking.RouteDomainV2.get_vlan")
         )
 
+    def get_temperature_metrics(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.SystemInfo.get_temperature_metrics")
+        )
+
+    def get_blade_temperature(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.SystemInfo.get_blade_temperature")
+        )
+
+    def get_fan_metrics(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.SystemInfo.get_fan_metrics")
+        )
+
+    def get_all_host_statistics(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.Statistics.get_all_host_statistics")
+        )
+
+    def get_global_cpu_usage_extended_information(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file(
+                "System.SystemInfo.get_global_cpu_usage_extended_information")
+        )
+
+    def get_power_supply_metrics(self, *args, **kwargs):
+        return ast.literal_eval(
+            self.get_from_file("System.SystemInfo.get_power_supply_metrics")
+        )
