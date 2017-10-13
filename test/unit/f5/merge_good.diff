@@ -1,1 +1,71 @@
-The diff when merging `merged_good.conf`
+--- napalm	2017-10-13 00:29:12.000000000 -0700
++++ napalm2	2017-10-13 00:32:27.000000000 -0700
+@@ -104,6 +104,68 @@ gtm global-settings metrics-exclusions {
+ ltm default-node-monitor {
+     rule none
+ }
++ltm node /Common/192.0.2.2 {
++    address 192.0.2.2
++    connection-limit 10
++    monitor /Common/gateway_icmp and /Common/icmp
++}
++ltm node /Common/example-node {
++    address 192.0.2.1
++    connection-limit 10
++    monitor /Common/none
++    rate-limit 5
++    ratio 5
++}
++ltm pool /Common/example-pool {
++    description "^%# This is an example pool #1$^"
++    load-balancing-mode fastest-node
++    members {
++        /Common/192.0.2.2:21 {
++            address 192.0.2.2
++        }
++        /Common/example-node:21 {
++            address 192.0.2.1
++        }
++    }
++    monitor /Common/http
++}
++ltm rule /Common/test-irule {
++    when HTTP_REQUEST {
++    set CLIENT_ADDR [IP::client_addr]
++    set XFF [HTTP::header X-Forwarded-For]
++    set ID "[TCP::local_port][expr { int(100000000 * rand()) }]"
++    set REQUEST_RECEIVE [clock clicks -milliseconds]
++}
++
++when HTTP_REQUEST_SEND {
++    set REQUEST_SEND [clock clicks -milliseconds]
++    set REQUEST_WAIT [expr {$REQUEST_SEND - $REQUEST_RECEIVE}]
++    log local0. "SRC:$CLIENT_ADDR  XFF:$XFF ID:$ID"
++}
++
++when HTTP_RESPONSE {
++    set RESPONSE_TIME [expr {[clock clicks -milliseconds] - $REQUEST_SEND}]
++    log local0. "SRC:$CLIENT_ADDR XFF:$XFF ID:$ID - HTTP[HTTP::status] $RESPONSE_TIME\ms/$REQUEST_WAIT\ms [LB::server addr]"
++}
++}
++ltm virtual /Common/testvs {
++    destination /Common/192.0.2.20:80
++    ip-protocol tcp
++    mask 255.255.255.255
++    profiles {
++        /Common/fasthttp { }
++    }
++    source 0.0.0.0/0
++    translate-address enabled
++    translate-port enabled
++}
++ltm virtual-address /Common/192.0.2.20 {
++    address 192.0.2.20
++    arp enabled
++    icmp-echo enabled
++    mask 255.255.255.255
++    traffic-group /Common/traffic-group-1
++}
+ net interface 1.1 {
+     media-fixed 10000T-FD
+ }
