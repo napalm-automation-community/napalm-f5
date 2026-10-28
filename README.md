@@ -16,7 +16,7 @@ This table identifies the currently available configuration methods supported:
 | Config Replace            | ✅        |
 | Commit Confirm            | ❌        |
 | Config Merge              | ❌        |
-| Compare Config            | ✅        |
+| Compare Config            | ❌        |
 | Atomic Changes            | ❌        |
 | Rollback                  | ❌        |
 
@@ -81,7 +81,7 @@ This table identifies the currently available getters and the support for each:
 | get_facts                 | ✅        |
 | get_firewall_policies     | ❌        |
 | get_interfaces            | ✅        |
-| get_interfaces_counters   | ❌        |
+| get_interfaces_counters   | ✅        |
 | get_interfaces_ip         | ✅        |
 | get_ipv6_neighbors_table  | ❌        |
 | get_lldp_neighbors        | ✅        |
