@@ -4,9 +4,11 @@ import inspect
 
 import pytest
 from napalm.base.base import NetworkDriver
+from napalm.base.exceptions import MergeConfigException, ReplaceConfigException
 
+from napalm_f5 import f5
 from napalm_f5.exceptions import ReadOnlyModeException
-from napalm_f5.f5 import BASE_GET_CONFIG_TAKES_FORMAT, F5Driver
+from napalm_f5.f5 import BASE_GET_CONFIG_TAKES_FORMAT, F5Driver, _safe_filename
 
 
 class RecordingDevice:
@@ -15,6 +17,11 @@ class RecordingDevice:
     def __init__(self):
         """Start with an empty call log."""
         self.commands = []
+        self.uploads = []
+
+    def upload(self, path, filename):
+        """Record an upload."""
+        self.uploads.append((path, filename))
 
     def command(self, path, data=None):
         """Record a command and return empty output."""
@@ -36,6 +43,7 @@ def test_config_methods_allowed_when_read_only_is_unset(optional_args):
 
     driver.cli(["show sys version"])
     driver.commit_config()
+    driver.filename = "candidate.scf"
     driver.discard_config()
 
     assert len(driver.device.commands) == 3
@@ -131,3 +139,115 @@ def test_read_only_mode_blocks_changes(method, args):
         getattr(driver, method)(*args)
 
     assert driver.device.commands == []
+
+
+@pytest.mark.parametrize(
+    "path, expected",
+    [("candidate.scf", "candidate.scf"), ("/home/user/configs/candidate-2024_01.scf", "candidate-2024_01.scf")],
+)
+def test_safe_filename_returns_basename(path, expected):
+    """Only the final path component is used on the device."""
+    assert _safe_filename(path) == expected
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["a;reboot.scf", "$(reboot).scf", "`reboot`.scf", 'a"b.scf', "has space.scf", ".hidden", "-rf", "", "café.scf"],
+)
+def test_safe_filename_rejects_shell_characters(path):
+    """Anything that could be interpreted by the device shell is refused."""
+    with pytest.raises(ValueError):
+        _safe_filename(path)
+
+
+@pytest.mark.parametrize("method, merge", [("load_replace_candidate", False), ("load_merge_candidate", True)])
+def test_load_candidate_uploads_full_path_and_moves_basename(tmp_path, method, merge):
+    """The local path is uploaded, then the bare filename is moved without a shell."""
+    candidate = tmp_path / "candidate.scf"
+    driver = build_driver()
+
+    getattr(driver, method)(filename=str(candidate))
+
+    assert driver.device.uploads == [("/mgmt/shared/file-transfer/uploads", str(candidate))]
+    assert driver.device.commands == [
+        (
+            "/mgmt/tm/util/unix-mv",
+            {"command": "run", "utilCmdArgs": "/var/config/rest/downloads/candidate.scf /tmp/candidate.scf"},
+        ),
+        ("/mgmt/tm/sys/config", {"command": "load", "options": [{"file": "/tmp/candidate.scf", "merge": merge}]}),
+    ]
+    assert driver.filename == "candidate.scf"
+
+
+@pytest.mark.parametrize(
+    "method, exception",
+    [("load_replace_candidate", ReplaceConfigException), ("load_merge_candidate", MergeConfigException)],
+)
+def test_load_candidate_rejects_unsafe_filename(method, exception):
+    """An unsafe filename never reaches the device."""
+    driver = build_driver()
+
+    with pytest.raises(exception):
+        getattr(driver, method)(filename="/configs/x;reboot.scf")
+
+    assert driver.device.uploads == []
+    assert driver.device.commands == []
+
+
+def test_discard_config_without_candidate_does_nothing():
+    """With nothing loaded there is no file to remove."""
+    driver = build_driver()
+
+    driver.discard_config()
+
+    assert driver.device.commands == []
+
+
+def test_discard_config_removes_candidate_without_shell():
+    """The loaded candidate is removed through unix-rm and forgotten."""
+    driver = build_driver()
+    driver.filename = "candidate.scf"
+
+    driver.discard_config()
+
+    assert driver.device.commands == [
+        ("/mgmt/tm/util/unix-rm", {"command": "run", "utilCmdArgs": "/tmp/candidate.scf"})
+    ]
+    assert driver.filename is None
+
+
+def test_commit_config_forgets_candidate():
+    """After a commit, a later discard has nothing to remove."""
+    driver = build_driver()
+    driver.filename = "candidate.scf"
+
+    driver.commit_config()
+    driver.discard_config()
+
+    assert driver.device.commands == [("/mgmt/tm/sys/config", {"command": "save"})]
+
+
+def test_cli_quotes_command_for_bash():
+    """Double quotes in a command no longer break out of the bash -c argument."""
+    driver = build_driver()
+
+    driver.cli(['tmsh list ltm pool "my pool"'])
+
+    assert driver.device.commands == [
+        ("/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": "-c 'tmsh list ltm pool \"my pool\"'"})
+    ]
+
+
+@pytest.mark.parametrize(
+    "optional_args, expected",
+    [(None, True), ({"ssl_verify": False}, False), ({"ssl_verify": "/etc/ssl/ca.pem"}, "/etc/ssl/ca.pem")],
+)
+def test_open_passes_ssl_verify(monkeypatch, optional_args, expected):
+    """TLS verification is on unless explicitly disabled or pointed at a CA bundle."""
+    calls = []
+    monkeypatch.setattr(f5, "BIGIP", lambda **kwargs: calls.append(kwargs))
+    driver = F5Driver("device.example.net", "admin", "admin", optional_args=optional_args)
+
+    driver.open()
+
+    assert calls[0]["session_verify"] == expected

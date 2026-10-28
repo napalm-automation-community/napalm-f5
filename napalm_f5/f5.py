@@ -4,7 +4,9 @@ Read https://napalm.readthedocs.io for more information.
 """
 
 import inspect
-import os
+import re
+import shlex
+from pathlib import PurePath
 from typing import Dict, List, Optional
 
 from bigrest.bigip import BIGIP, RESTAPIError
@@ -18,6 +20,19 @@ from napalm_f5.exceptions import CommitConfigException, DiscardConfigException, 
 # signature test requires an override to match the installed base class exactly, so
 # the public signature is chosen from whichever version is installed.
 BASE_GET_CONFIG_TAKES_FORMAT = "format" in inspect.signature(NetworkDriver.get_config).parameters
+
+_SAFE_FILENAME = re.compile(r"[\w.-]+", re.ASCII)
+
+# Directory iControl REST writes uploaded files to on the BIG-IP.
+REST_DOWNLOADS_DIR = "/var/config/rest/downloads"
+
+
+def _safe_filename(path: str) -> str:
+    """Return the final component of path, rejecting anything unsafe for the device shell."""
+    name = PurePath(path).name
+    if name.startswith((".", "-")) or not _SAFE_FILENAME.fullmatch(name):
+        raise ValueError(f"Unsafe config filename: {name!r}")
+    return name
 
 
 class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-instance-attributes, too-many-public-methods
@@ -36,6 +51,7 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
             optional_args (Optional[dict], optional): Optional arguments to use with driver. Defaults to None.
 
         If optional_args contains a value called 'read_only' set to True, the interactions with the device will be set to read-only disabling any changes.
+        'ssl_verify' controls TLS certificate verification: True (default), False, or a path to a CA bundle.
         """
         self.hostname = hostname
         self.username = username
@@ -58,7 +74,7 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
                 device=self.hostname,
                 username=self.username,
                 password=self.password,
-                session_verify=False,
+                session_verify=self.optional_args.get("ssl_verify", True),
                 timeout=self.timeout,
             )
         except RESTAPIError as err:
@@ -70,6 +86,9 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
 
     def cli(self, commands: List[str], encoding: str = "text") -> Dict[str, str]:
         """F5 version of 'cli' method, see NAPALM for documentation.
+
+        Each command is run with bash on the BIG-IP using the connecting user's privileges,
+        so it must never be given untrusted input.
 
         Args:
             commands (List[str]): List of commands to be sent as strings.
@@ -84,7 +103,7 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
 
         for command in commands:
             results[command] = self.device.command(
-                "/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": f'-c "{command}"'}
+                "/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": f"-c {shlex.quote(command)}"}
             )
         return results
 
@@ -99,9 +118,9 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
             raise ReadOnlyModeException
 
         if filename:
-            self.filename = os.path.basename(filename)
             try:
-                self._upload_scf(filename)
+                self.filename = _safe_filename(filename)
+                self._upload_scf(filename, self.filename)
                 # /tmp here is a path on the BIG-IP, not a local temp directory.
                 data = {
                     "command": "load",
@@ -184,9 +203,9 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
             raise ReadOnlyModeException
 
         if filename:
-            self.filename = os.path.basename(filename)
             try:
-                self._upload_scf(filename)
+                self.filename = _safe_filename(filename)
+                self._upload_scf(filename, self.filename)
                 # /tmp here is a path on the BIG-IP, not a local temp directory.
                 data = {
                     "command": "load",
@@ -212,19 +231,25 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
             self.device.command("/mgmt/tm/sys/config", {"command": "save"})
         except RESTAPIError as err:
             raise CommitConfigException(err) from err
+        self.filename = None
 
     def discard_config(self):
         """F5 version of 'discard_config' method, see NAPALM for documentation."""
         if self.optional_args.get("read_only"):
             raise ReadOnlyModeException
 
+        if self.filename is None:
+            return
+
         try:
+            # /tmp here is a path on the BIG-IP, not a local temp directory.
             self.device.command(
-                "/mgmt/tm/util/bash",
-                {"command": "run", "utilCmdArgs": f'-c "rm /tmp/{self.filename}"'},
+                "/mgmt/tm/util/unix-rm",
+                {"command": "run", "utilCmdArgs": f"/tmp/{self.filename}"},  # noqa: S108
             )
         except RESTAPIError as err:
             raise DiscardConfigException(err) from err
+        self.filename = None
 
     def is_alive(self):
         """F5 version of `is_alive` method, see NAPALM for documentation."""
@@ -460,14 +485,21 @@ class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-inst
             }
         return vlan_info
 
-    def _upload_scf(self, fp):
+    def _upload_scf(self, local_path: str, filename: str):
+        """Upload local_path and move it to /tmp/<filename> on the BIG-IP.
+
+        filename must already have passed _safe_filename(); bigrest stores the upload under that basename.
+        """
         if self.optional_args.get("read_only"):
             raise ReadOnlyModeException
 
         try:
-            self.device.upload("/mgmt/shared/file-transfer/uploads", fp)
+            self.device.upload("/mgmt/shared/file-transfer/uploads", local_path)
             # we need to move the file to a whitelisted directory and /tmp is the easiest as it's cleared upon reboot
-            self.cli(commands=[f"mv /var/config/rest/downloads/{fp} /tmp/"])
+            self.device.command(
+                "/mgmt/tm/util/unix-mv",
+                {"command": "run", "utilCmdArgs": f"{REST_DOWNLOADS_DIR}/{filename} /tmp/{filename}"},  # noqa: S108
+            )
         except RESTAPIError as err:
             raise ConnectionError(f"F5 API Error: {err}") from err
         except EnvironmentError as err:

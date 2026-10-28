@@ -39,6 +39,33 @@ with driver(f5_device, f5_user, f5_password, optional_args=optional_args) as dev
 
 As shown in the example above, the use of NAPALM's context manager is supported and is recommended for use.
 
+## Optional Arguments
+
+| Argument     | Default | Description |
+| ------------ | ------- | ----------- |
+| `read_only`  | `False` | Refuse any driver method that can change the device. See [Required Privileges](#required-privileges). |
+| `ssl_verify` | `True`  | TLS certificate verification for the iControl REST connection: `True`, `False`, or a path to a CA bundle. |
+
+> **Breaking change:** `ssl_verify` defaults to `True`, so TLS certificates are now verified by default. Earlier REST releases always disabled verification. To connect to a device with a self-signed certificate, either set `optional_args = {"ssl_verify": "/path/to/ca-bundle.pem"}` or, if you accept the risk, `optional_args = {"ssl_verify": False}`.
+
+## Required Privileges
+
+Some methods run commands through the `/mgmt/tm/util/bash` endpoint. On a BIG-IP this generally requires an account with the Administrator role and advanced shell (bash) access, even when you only read from the device:
+
+| Method                                         | Uses bash |
+| ---------------------------------------------- | --------- |
+| `get_config`                                   | ✅        |
+| `get_facts` (uptime)                           | ✅        |
+| `cli`                                          | ✅        |
+| `load_replace_candidate`, `load_merge_candidate` | ❌ (file upload, `unix-mv`, `tmsh load`) |
+| `discard_config`                               | ❌ (`unix-rm`) |
+
+`read_only` is only a guard inside the driver: it blocks the methods that change the device, but it does not reduce the privileges of the account you connect with.
+
+`cli()` runs each command with bash on the BIG-IP using the connecting account's privileges. Never pass it untrusted input.
+
+Candidate config filenames may contain only letters, digits, `_`, `.` and `-`, and must not start with `.` or `-`. Only the final path component is used on the device.
+
 ## Supported Getters
 
 This table identifies the currently available getters and the support for each:
@@ -75,4 +102,4 @@ This table identifies the currently available getters and the support for each:
 | ping                      | ❌        |
 | traceroute                | ❌        |
 
-> NOTE: This driver has a `read-only mode` feature that will disable any driver functions that can make changes on the connected Device. To enable this feature you simply need to pass `"read_only" = True` in optional_args.
+> NOTE: This driver has a `read-only mode` feature that will disable any driver functions that can make changes on the connected Device. To enable this feature you simply need to pass `"read_only": True` in optional_args. It does not reduce the privileges needed on the device; see [Required Privileges](#required-privileges).
