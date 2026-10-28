@@ -1,1 +1,0 @@
-[{'source': 'default', 'oid': None, 'community': 'public', 'ipv6': 0}]

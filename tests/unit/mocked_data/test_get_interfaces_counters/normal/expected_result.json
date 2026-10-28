@@ -1,0 +1,58 @@
+{
+    "1.1": {
+        "rx_broadcast_packets": -1,
+        "rx_discards": -1,
+        "rx_errors": -1,
+        "rx_multicast_packets": -1,
+        "rx_octets": 385420,
+        "rx_unicast_packets": 5506,
+        "tx_broadcast_packets": -1,
+        "tx_discards": -1,
+        "tx_errors": -1,
+        "tx_multicast_packets": -1,
+        "tx_octets": 3840,
+        "tx_unicast_packets": 46
+    },
+    "1.2": {
+        "rx_broadcast_packets": -1,
+        "rx_discards": -1,
+        "rx_errors": -1,
+        "rx_multicast_packets": -1,
+        "rx_octets": 1623250,
+        "rx_unicast_packets": 26019,
+        "tx_broadcast_packets": -1,
+        "tx_discards": -1,
+        "tx_errors": -1,
+        "tx_multicast_packets": -1,
+        "tx_octets": 1900,
+        "tx_unicast_packets": 24
+    },
+    "1.3": {
+        "rx_broadcast_packets": -1,
+        "rx_discards": -1,
+        "rx_errors": -1,
+        "rx_multicast_packets": -1,
+        "rx_octets": 0,
+        "rx_unicast_packets": 0,
+        "tx_broadcast_packets": -1,
+        "tx_discards": -1,
+        "tx_errors": -1,
+        "tx_multicast_packets": -1,
+        "tx_octets": 0,
+        "tx_unicast_packets": 0
+    },
+    "mgmt": {
+        "rx_broadcast_packets": -1,
+        "rx_discards": -1,
+        "rx_errors": -1,
+        "rx_multicast_packets": -1,
+        "rx_octets": 24472701,
+        "rx_unicast_packets": 102004,
+        "tx_broadcast_packets": -1,
+        "tx_discards": -1,
+        "tx_errors": -1,
+        "tx_multicast_packets": -1,
+        "tx_octets": 32648026,
+        "tx_unicast_packets": 54415
+    }
+}

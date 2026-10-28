@@ -1,0 +1,18 @@
+[
+    {
+        "kind": "tm:auth:user:userstate",
+        "name": "admin",
+        "encryptedPassword": "$1$salt$IEd.dPRrJY41NYnnaBENQ1",
+        "partitionAccess": [
+            {"name": "all-partitions", "role": "guest"}
+        ]
+    },
+    {
+        "kind": "tm:auth:user:userstate",
+        "name": "root",
+        "encryptedPassword": "$1$tAiUgKE3$t27ER2uyRzoplfh91./94.",
+        "partitionAccess": [
+            {"name": "all-partitions", "role": "guest"}
+        ]
+    }
+]

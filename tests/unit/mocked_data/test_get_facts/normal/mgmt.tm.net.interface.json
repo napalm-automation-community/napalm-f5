@@ -1,0 +1,6 @@
+[
+    {"name": "mgmt", "fullPath": "mgmt", "macAddress": "FA:16:3E:BD:F0:57", "mediaActive": "100TX-FD", "enabled": true},
+    {"name": "1.2",  "fullPath": "1.2",  "macAddress": "FA:16:3E:E5:FF:04", "mediaActive": "none",     "enabled": true},
+    {"name": "1.3",  "fullPath": "1.3",  "macAddress": "FA:16:3E:26:4F:A6", "mediaActive": "none",     "enabled": true},
+    {"name": "1.1",  "fullPath": "1.1",  "macAddress": "FA:16:3E:64:A2:14", "mediaActive": "none",     "enabled": true}
+]

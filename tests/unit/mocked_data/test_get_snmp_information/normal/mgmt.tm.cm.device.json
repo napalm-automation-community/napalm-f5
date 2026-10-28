@@ -1,0 +1,10 @@
+[
+    {
+        "kind": "tm:cm:device:devicestate",
+        "name": "bigip1",
+        "hostname": "bigip1",
+        "chassisId": "",
+        "marketingName": "BIG-IP Virtual Edition",
+        "version": "15.1.0.1"
+    }
+]

@@ -1,0 +1,15 @@
+[
+    {
+        "kind": "tm:net:lldp-neighbors:lldp-neighborsstate",
+        "name": "1.1",
+        "localInterface": {
+            "description": "1.1"
+        },
+        "chassisId": {
+            "description": "neighbor-switch"
+        },
+        "portId": {
+            "description": "Gi0/1"
+        }
+    }
+]

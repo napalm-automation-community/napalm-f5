@@ -1,0 +1,9 @@
+[
+    {
+        "kind": "tm:sys:snmp:communities:communitiesstate",
+        "name": "public",
+        "communityName": "public",
+        "access": "ro",
+        "source": "default"
+    }
+]

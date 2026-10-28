@@ -1,0 +1,146 @@
+{
+    "kind": "tm:net:interface:interfacecollectionstats",
+    "selfLink": "https://localhost/mgmt/tm/net/interface/stats?ver=15.1.0.1",
+    "entries": {
+        "https://localhost/mgmt/tm/net/interface/1.1/stats": {
+            "nestedStats": {
+                "kind": "tm:net:interface:interfacestats",
+                "selfLink": "https://localhost/mgmt/tm/net/interface/1.1/stats?ver=15.1.0.1",
+                "entries": {
+                    "counters.bitsIn": {
+                        "value": 3083360
+                    },
+                    "counters.bitsOut": {
+                        "value": 30720
+                    },
+                    "counters.dropsAll": {
+                        "value": 0
+                    },
+                    "counters.errorsAll": {
+                        "value": 0
+                    },
+                    "counters.pktsIn": {
+                        "value": 5506
+                    },
+                    "counters.pktsOut": {
+                        "value": 46
+                    },
+                    "mediaActive": {
+                        "description": "10000T-FD"
+                    },
+                    "tmName": {
+                        "description": "1.1"
+                    },
+                    "status": {
+                        "description": "up"
+                    }
+                }
+            }
+        },
+        "https://localhost/mgmt/tm/net/interface/1.2/stats": {
+            "nestedStats": {
+                "kind": "tm:net:interface:interfacestats",
+                "selfLink": "https://localhost/mgmt/tm/net/interface/1.2/stats?ver=15.1.0.1",
+                "entries": {
+                    "counters.bitsIn": {
+                        "value": 12986000
+                    },
+                    "counters.bitsOut": {
+                        "value": 15200
+                    },
+                    "counters.dropsAll": {
+                        "value": 0
+                    },
+                    "counters.errorsAll": {
+                        "value": 0
+                    },
+                    "counters.pktsIn": {
+                        "value": 26019
+                    },
+                    "counters.pktsOut": {
+                        "value": 24
+                    },
+                    "mediaActive": {
+                        "description": "10000T-FD"
+                    },
+                    "tmName": {
+                        "description": "1.2"
+                    },
+                    "status": {
+                        "description": "up"
+                    }
+                }
+            }
+        },
+        "https://localhost/mgmt/tm/net/interface/1.3/stats": {
+            "nestedStats": {
+                "kind": "tm:net:interface:interfacestats",
+                "selfLink": "https://localhost/mgmt/tm/net/interface/1.3/stats?ver=15.1.0.1",
+                "entries": {
+                    "counters.bitsIn": {
+                        "value": 0
+                    },
+                    "counters.bitsOut": {
+                        "value": 0
+                    },
+                    "counters.dropsAll": {
+                        "value": 0
+                    },
+                    "counters.errorsAll": {
+                        "value": 0
+                    },
+                    "counters.pktsIn": {
+                        "value": 0
+                    },
+                    "counters.pktsOut": {
+                        "value": 0
+                    },
+                    "mediaActive": {
+                        "description": "none"
+                    },
+                    "tmName": {
+                        "description": "1.3"
+                    },
+                    "status": {
+                        "description": "uninit"
+                    }
+                }
+            }
+        },
+        "https://localhost/mgmt/tm/net/interface/mgmt/stats": {
+            "nestedStats": {
+                "kind": "tm:net:interface:interfacestats",
+                "selfLink": "https://localhost/mgmt/tm/net/interface/mgmt/stats?ver=15.1.0.1",
+                "entries": {
+                    "counters.bitsIn": {
+                        "value": 195781608
+                    },
+                    "counters.bitsOut": {
+                        "value": 261184208
+                    },
+                    "counters.dropsAll": {
+                        "value": 0
+                    },
+                    "counters.errorsAll": {
+                        "value": 0
+                    },
+                    "counters.pktsIn": {
+                        "value": 102004
+                    },
+                    "counters.pktsOut": {
+                        "value": 54415
+                    },
+                    "mediaActive": {
+                        "description": "100TX-FD"
+                    },
+                    "tmName": {
+                        "description": "mgmt"
+                    },
+                    "status": {
+                        "description": "up"
+                    }
+                }
+            }
+        }
+    }
+}

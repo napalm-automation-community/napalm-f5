@@ -1,0 +1,6 @@
+{
+    "kind": "tm:sys:snmp:snmpstats",
+    "selfLink": "https://localhost/mgmt/tm/sys/snmp?ver=15.1.0.1",
+    "sysContact": "asd",
+    "sysLocation": "Network Closet 1"
+}

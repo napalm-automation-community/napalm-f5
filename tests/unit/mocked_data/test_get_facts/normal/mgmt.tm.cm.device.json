@@ -1,0 +1,12 @@
+[
+    {
+        "kind": "tm:cm:device:devicestate",
+        "name": "bigip1",
+        "hostname": "bigip1",
+        "marketingName": "BIG-IP Virtual Edition",
+        "version": "BIG-IP_v11.6.1",
+        "chassisId": "4225052f-6da8-a9c6-ae4b3609da29",
+        "product": "BIG-IP",
+        "platformId": "Z100"
+    }
+]

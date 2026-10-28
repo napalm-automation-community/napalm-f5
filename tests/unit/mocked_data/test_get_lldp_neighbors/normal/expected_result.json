@@ -1,0 +1,8 @@
+{
+    "1.1": [
+        {
+            "hostname": "neighbor-switch",
+            "port": "Gi0/1"
+        }
+    ]
+}

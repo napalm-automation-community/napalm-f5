@@ -1,0 +1,18 @@
+[
+    {
+        "kind": "tm:net:self:selfstate",
+        "name": "mzb",
+        "partition": "Common",
+        "fullPath": "/Common/mzb",
+        "address": "4.4.4.4/32",
+        "vlan": "/Common/EXTERNAL"
+    },
+    {
+        "kind": "tm:net:self:selfstate",
+        "name": "mzb2",
+        "partition": "Common",
+        "fullPath": "/Common/mzb2",
+        "address": "2000::2/64",
+        "vlan": "/Common/INTERNAL"
+    }
+]

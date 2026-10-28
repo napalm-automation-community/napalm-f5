@@ -1,0 +1,9 @@
+[
+    {
+        "kind": "tm:net:vlan:interfaces:interfacesstate",
+        "name": "1.2",
+        "fullPath": "1.2",
+        "tagMode": "none",
+        "untagged": true
+    }
+]

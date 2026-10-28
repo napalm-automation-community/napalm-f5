@@ -1,37 +1,58 @@
-# Copyright 2016 Dravetech AB. All rights reserved.
-#
-# The contents of this file are licensed under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with the
-# License. You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations under
-# the License.
+"""Napalm driver for F5.
 
-"""
-Napalm driver for F5.
 Read https://napalm.readthedocs.io for more information.
 """
 
-import base64
-import os
+import inspect
+import re
+import shlex
+from pathlib import PurePath
+from typing import Dict, List, Optional
 
-import bigsuds
-from napalm_base.base import NetworkDriver
-from napalm_base.exceptions import ConnectionException, \
-    MergeConfigException, ReplaceConfigException
+from bigrest.bigip import BIGIP, RESTAPIError
+from napalm.base.base import NetworkDriver
+from napalm.base.exceptions import ConnectionException, MergeConfigException, ReplaceConfigException
+from napalm.base.models import ConfigDict, InterfaceCounterDict
 
-from napalm_f5.env import LIMITS, ALERT
-from napalm_f5.exceptions import CommitConfigException, DiscardConfigException
+from napalm_f5.exceptions import CommitConfigException, DiscardConfigException, ReadOnlyModeException
+
+# NAPALM 5 added a `format` argument to get_config; NAPALM 4 did not. NAPALM's own
+# signature test requires an override to match the installed base class exactly, so
+# the public signature is chosen from whichever version is installed.
+BASE_GET_CONFIG_TAKES_FORMAT = "format" in inspect.signature(NetworkDriver.get_config).parameters
+
+_SAFE_FILENAME = re.compile(r"[\w.-]+", re.ASCII)
+
+# Directory iControl REST writes uploaded files to on the BIG-IP.
+REST_DOWNLOADS_DIR = "/var/config/rest/downloads"
 
 
-class F5Driver(NetworkDriver):
-    def __init__(self, hostname, username, password, timeout=60,
-                 optional_args=None):
+def _safe_filename(path: str) -> str:
+    """Return the final component of path, rejecting anything unsafe for the device shell."""
+    name = PurePath(path).name
+    if name.startswith((".", "-")) or not _SAFE_FILENAME.fullmatch(name):
+        raise ValueError(f"Unsafe config filename: {name!r}")
+    return name
+
+
+class F5Driver(NetworkDriver):  # pylint: disable=abstract-method, too-many-instance-attributes, too-many-public-methods
+    """F5 REST API based NAPALM driver."""
+
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        self, hostname: str, username: str, password: str, timeout: int = 60, optional_args: Optional[dict] = None
+    ):
+        """Initialize shared variables for driver.
+
+        Args:
+            hostname (str): Hostname for device to connect to.
+            username (str): Username to authenticate with against device.
+            password (str): Password to authenticate with against device.
+            timeout (int, optional): Timeout for requests.. Defaults to 60.
+            optional_args (Optional[dict], optional): Optional arguments to use with driver. Defaults to None.
+
+        If optional_args contains a value called 'read_only' set to True, the interactions with the device will be set to read-only disabling any changes.
+        'ssl_verify' controls TLS certificate verification: True (default), False, or a path to a CA bundle.
+        """
         self.hostname = hostname
         self.username = username
         self.password = password
@@ -42,561 +63,444 @@ class F5Driver(NetworkDriver):
         self.device = None
 
         if optional_args is None:
-            optional_args = {}
+            self.optional_args = {}
+        else:
+            self.optional_args = optional_args
 
     def open(self):
+        """F5 version of `open` method, see NAPALM for documentation."""
         try:
-            self.device = bigsuds.BIGIP(hostname=self.hostname,
-                                        username=self.username,
-                                        password=self.password
-                                        )
-            self.devices = self.device.Management.Device.get_list()
-        except bigsuds.OperationFailed as err:
-            raise ConnectionException('ConfigSync API Error ({})'.format(err))
+            self.device = BIGIP(
+                device=self.hostname,
+                username=self.username,
+                password=self.password,
+                session_verify=self.optional_args.get("ssl_verify", True),
+                timeout=self.timeout,
+            )
+        except RESTAPIError as err:
+            raise ConnectionException(f"F5 API Error ({err})") from err
+
+    def close(self):
+        """F5 version of `close` method, see NAPALM for documentation."""
+        self.device = None
+
+    def cli(self, commands: List[str], encoding: str = "text") -> Dict[str, str]:
+        """F5 version of 'cli' method, see NAPALM for documentation.
+
+        Each command is run with bash on the BIG-IP using the connecting user's privileges,
+        so it must never be given untrusted input.
+
+        Args:
+            commands (List[str]): List of commands to be sent as strings.
+            encoding (str, optional): Encoding of results. Defaults to "text".
+
+        Returns:
+            Dict[str, str]: Dictionary of commands sent and their associated response.
+        """
+        results = {}
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
+
+        for command in commands:
+            results[command] = self.device.command(
+                "/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": f"-c {shlex.quote(command)}"}
+            )
+        return results
 
     def load_replace_candidate(self, filename=None, config=None):
+        """F5 version of 'load_replace_candidate' method, see NAPALM for documentation."""
         self.config_replace = True
 
         if config:
             raise NotImplementedError
 
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
+
         if filename:
-            self.filename = os.path.basename(filename)
             try:
-                self._upload_scf(filename)
+                self.filename = _safe_filename(filename)
+                self._upload_scf(filename, self.filename)
+                # /tmp here is a path on the BIG-IP, not a local temp directory.
+                data = {
+                    "command": "load",
+                    "options": [{"file": f"/tmp/{self.filename}", "merge": False}],  # noqa: S108
+                }
+                self.device.command("/mgmt/tm/sys/config", data)
             except Exception as err:
-                raise ReplaceConfigException('{}'.format(err))
+                raise ReplaceConfigException(err) from err
+
+    def _get_config(  # pylint: disable=redefined-builtin
+        self,
+        retrieve: str,
+        full: bool,
+        sanitized: bool,
+        format: str,
+    ) -> ConfigDict:
+        """Shared implementation behind the version-specific get_config signatures.
+
+        Args:
+            retrieve (string): Which configuration type you want to populate, default is full running-config. The rest will be set to "".
+            full (bool): Retrieve all the configuration. For instance, on ios, "sh run all".
+            sanitized (bool): Remove secret data. Default: False.
+            format (string): Configuration format to retrieve. Only "text" is supported on F5.
+
+        Returns:
+            running(string): Representation of the native running configuration
+            candidate(string): Representation of the native candidate configuration. If the device doesnt differentiate between running and startup configuration this will an empty string
+            startup(string): Representation of the native startup configuration. If the device doesnt differentiate between running and startup configuration this will an empty string
+        """
+        if sanitized or full:
+            raise NotImplementedError("Specified feature for get_config() is not implemented.")
+
+        if format != "text":
+            raise NotImplementedError(f"Configuration format {format} is not supported, only 'text' is available.")
+
+        if retrieve not in ["all", "recursive", "running"]:
+            raise NotImplementedError(f"Retrieve type of {retrieve} is not valid. Only running-config can be provided.")
+
+        if retrieve == "recursive":
+            config = self.device.command(
+                "/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": '-c "tmsh show running-config recursive"'}
+            )
+        else:
+            config = self.device.command(
+                "/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": '-c "tmsh show running-config"'}
+            )
+        return {"running": config, "candidate": "", "startup": ""}
+
+    if BASE_GET_CONFIG_TAKES_FORMAT:
+
+        def get_config(  # pylint: disable=redefined-builtin, arguments-differ
+            self,
+            retrieve: str = "all",
+            full: bool = False,
+            sanitized: bool = False,
+            format: str = "text",
+        ) -> ConfigDict:
+            """F5 version of 'get_config' method, see NAPALM for documentation."""
+            return self._get_config(retrieve, full, sanitized, format)
+
+    else:
+
+        def get_config(  # pylint: disable=arguments-differ
+            self,
+            retrieve: str = "all",
+            full: bool = False,
+            sanitized: bool = False,
+        ) -> ConfigDict:
+            """F5 version of 'get_config' method, see NAPALM for documentation."""
+            return self._get_config(retrieve, full, sanitized, "text")
 
     def load_merge_candidate(self, filename=None, config=None):
+        """F5 version of 'load_merge_candidate' method, see NAPALM for documentation."""
         self.config_replace = False
 
         if config:
             raise NotImplementedError
 
-        if filename:
-            self.filename = os.path.basename(filename)
-            try:
-                self._upload_scf(filename)
-            except Exception as err:
-                raise MergeConfigException('{}'.format(err))
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
 
-    def commit_config(self):
+        if filename:
+            try:
+                self.filename = _safe_filename(filename)
+                self._upload_scf(filename, self.filename)
+                # /tmp here is a path on the BIG-IP, not a local temp directory.
+                data = {
+                    "command": "load",
+                    "options": [{"file": f"/tmp/{self.filename}", "merge": True}],  # noqa: S108
+                }
+                self.device.command("/mgmt/tm/sys/config", data)
+            except Exception as err:
+                raise MergeConfigException(err) from err
+
+    def commit_config(self, message: str = "", revert_in: Optional[int] = None) -> None:
+        """F5 version of 'commit_config' method, see NAPALM for documentation.
+
+        Args:
+            message (str): Optional - configuration session commit message
+            revert_in (Optional[int]): Not supported on F5. Raises NotImplementedError if set.
+        """
+        if revert_in is not None:
+            raise NotImplementedError("revert_in is not supported on F5 devices.")
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
+
         try:
-            self.device.System.ConfigSync.install_single_configuration_file(
-                filename=self.filename,
-                load_flag='LOAD_HIGH_LEVEL_CONFIG',
-                passphrase='',
-                tarfile='',
-                merge=not self.config_replace
-            )
-        except bigsuds.OperationFailed as err:
-            raise CommitConfigException('{}'.format(err))
+            self.device.command("/mgmt/tm/sys/config", {"command": "save"})
+        except RESTAPIError as err:
+            raise CommitConfigException(err) from err
+        self.filename = None
 
     def discard_config(self):
+        """F5 version of 'discard_config' method, see NAPALM for documentation."""
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
+
+        if self.filename is None:
+            return
+
         try:
-            self.device.System.ConfigSync.delete_single_configuration_file(
-                filename=self.filename
+            # /tmp here is a path on the BIG-IP, not a local temp directory.
+            self.device.command(
+                "/mgmt/tm/util/unix-rm",
+                {"command": "run", "utilCmdArgs": f"/tmp/{self.filename}"},  # noqa: S108
             )
-        except bigsuds.OperationFailed as err:
-            raise DiscardConfigException('{}'.format(err))
+        except RESTAPIError as err:
+            raise DiscardConfigException(err) from err
+        self.filename = None
 
     def is_alive(self):
+        """F5 version of `is_alive` method, see NAPALM for documentation."""
         if self.device:
-            return {'is_alive': True}
-        else:
-            return {'is_alive': False}
+            return {"is_alive": True}
+        return {"is_alive": False}
 
-    def _get_uptime(self):
-        return self.device.System.SystemInfo.get_uptime()
+    def _get_uptime(self) -> float:
+        result = self.device.command("/mgmt/tm/util/bash", {"command": "run", "utilCmdArgs": "-c 'cat /proc/uptime'"})
+        return float(result.split()[0])
 
-    def _get_version(self):
-        return self.device.System.SystemInfo.get_version()
-
-    def _get_serial_number(self):
-        system_information = self.device.System.SystemInfo.get_system_information()
-        chassis_serial = system_information['chassis_serial']
-        return chassis_serial
-
-    def _get_model(self):
-        return self.device.System.SystemInfo.get_marketing_name()
-
-    def _get_hostname(self):
-        return self.device.Management.Device.get_hostname(self.devices)[0]
+    def _get_device_info(self):
+        return self.device.load("/mgmt/tm/cm/device/")[0].properties
 
     def get_facts(self):
+        """F5 version of `get_facts` method, see NAPALM for documentation."""
+        device_info = self._get_device_info()
         facts = {
-            'uptime': self._get_uptime(),
-            'vendor': 'F5 Networks',
-            'model': self._get_model(),
-            'hostname': self._get_hostname(),
-            'fqdn': self._get_hostname(),
-            'os_version': self._get_version(),
-            'serial_number': self._get_serial_number(),
-            'interface_list': self._get_interfaces_list()
+            "uptime": self._get_uptime(),
+            "vendor": "F5 Networks",
+            "model": device_info["marketingName"],
+            "hostname": device_info["hostname"],
+            "fqdn": device_info["hostname"],
+            "os_version": device_info["version"],
+            "serial_number": device_info["chassisId"],
+            "interface_list": self._get_interfaces_list(query=self.device.load("/mgmt/tm/net/interface/")),
         }
         return facts
 
-    def _get_interfaces_list(self):
-        interfaces = self.device.Networking.Interfaces.get_list()
+    def _get_interfaces_list(self, query) -> List[str]:
+        interfaces = [intf.properties["name"] for intf in query]
         return interfaces
 
-    def _get_interfaces_enabled_state(self, interfaces):
-        enabled_state = self.device.Networking.Interfaces.get_enabled_state(
-            interfaces)
+    def _get_interfaces_enabled_state(self, query) -> List[bool]:
+        enabled_state = [intf.properties["enabled"] for intf in query]
         return enabled_state
 
-    def _get_interfaces_mac_address(self, interfaces):
-        mac_address = self.device.Networking.Interfaces.get_mac_address(
-            interfaces)
-        return mac_address
+    def _get_interfaces_mac_address(self, query) -> List[str]:
+        mac_addresses = [intf.properties["macAddress"] for intf in query]
+        return mac_addresses
 
-    def _get_interfaces_active_media(self, interfaces):
-        active_media = self.device.Networking.Interfaces.get_active_media(
-            interfaces)
+    def _get_interfaces_active_media(self, query) -> List[bool]:
+        active_media = [intf.properties["mediaActive"] for intf in query]
         return active_media
 
-    def _get_interfaces_media_status(self, interfaces):
-        media_status = self.device.Networking.Interfaces.get_media_status(
-            interfaces)
+    def _get_interfaces_media_status(self, query) -> List[bool]:
+        media_status = [not (intf.properties["mediaActive"] == "none") for intf in query]
         return media_status
 
-    def _get_interfaces_description(self, interfaces):
-        description = self.device.Networking.Interfaces.get_description(
-            interfaces)
+    def _get_interfaces_description(self, query) -> List[str]:
+        description = [intf.properties["description"] if intf.properties.get("description") else "" for intf in query]
         return description
 
-    def _get_interfaces_all_statistics(self):
-        statistcs = self.device.Networking.Interfaces.get_all_statistics()
-        return statistcs
+    def _get_interfaces_mtu(self, query) -> List[int]:
+        mtu = [intf.properties.get("mtu", 0) for intf in query]
+        return mtu
 
-    def _get_active_media(self, interfaces):
-        active_media = self.device.Networking.Interfaces.get_active_media(
-            interfaces)
-        return active_media
+    def _get_interfaces_all_statistics(self) -> dict:
+        return self.device.load("/mgmt/tm/net/interface/stats/").properties
 
-    def _get_system_information(self):
-        system_information = self.device.Management.SNMPConfiguration.get_system_information()
+    def _get_system_information(self) -> dict:
+        system_information = self.device.load("/mgmt/tm/sys/snmp/").properties
         return system_information
 
     def get_snmp_information(self):
+        """F5 version of 'get_snmp_information' method, see NAPALM for documentation."""
         sys_info = self._get_system_information()
+        device_info = self._get_device_info()
         snmp_info = {
-            'contact': sys_info['sys_contact'] or '',
-            'location': sys_info['sys_location'] or '',
-            'chassis_id': sys_info['sys_description'] or '',
-            'community': {},
+            "contact": sys_info["sysContact"] or "",
+            "location": sys_info["sysLocation"] or "",
+            "chassis_id": device_info["chassisId"],
+            "community": {},
         }
-        ro_comm = self.device.Management.SNMPConfiguration.get_readonly_community()
-        rw_comm = self.device.Management.SNMPConfiguration.get_readwrite_community()
+        communities = self.device.load("/mgmt/tm/sys/snmp/communities/")
 
-        for x in ro_comm:
-            snmp_info['community'][x['community']] = {
-                'acl': x['source'] or 'N/A',
-                'mode': 'ro',
-            }
-
-        for x in rw_comm:
-            snmp_info['community'][x['community']] = {
-                'acl': x['source'] or 'N/A',
-                'mode': 'rw',
+        for comm in communities:
+            snmp_info["community"][comm.properties["communityName"]] = {
+                "acl": comm.properties["source"] or "N/A",
+                "mode": comm.properties["access"],
             }
 
         return snmp_info
 
+    def get_lldp_neighbors(self):
+        """F5 version of 'get_lldp_neigbors' method, see NAPALM for documentation."""
+        lldp_info = {}
+        lldp_neighbors = self.device.load("/mgmt/tm/net/lldp-neighbors?options=all-properties")
+        for neighbor in lldp_neighbors:
+            lldp_info[neighbor.properties["localInterface"]["description"]] = [
+                {
+                    "hostname": neighbor.properties["chassisId"]["description"],
+                    "port": neighbor.properties["portId"]["description"],
+                }
+            ]
+        return lldp_info
+
+    def get_lldp_neighbors_detail(self, interface: str = ""):
+        """F5 version of 'get_lldp_neigbors_detail' method, see NAPALM for documentation."""
+        raise NotImplementedError
+
     def get_mac_address_table(self):
-        vlan_list = self.device.Networking.VLAN.get_list()
-        vlan_ids = self.device.Networking.VLAN.get_vlan_id(vlan_list)
-        dynamic_mac_list = self.device.Networking.VLAN.get_dynamic_forwarding(
-            vlan_list)
-        static_mac_list = self.device.Networking.VLAN.get_static_forwarding(
-            vlan_list)
-
-        mac_list = list()
-
-        for vlan_id, vlan, dynamic_entry in zip(vlan_ids, vlan_list,
-                                                dynamic_mac_list):
-            for fdb in dynamic_entry:
-                mac_list.append(
-                    {
-                        'mac': fdb['mac_address'],
-                        'interface': vlan,
-                        'vlan': vlan_id,
-                        'static': False,
-                        'active': True,
-                        'moves': 0,
-                        'last_move': 0.0,
-                    }
-                )
-
-        for vlan_id, vlan, static_entry in zip(vlan_ids, vlan_list,
-                                               static_mac_list):
-            for fdb in static_entry:
-                mac_list.append(
-                    {
-                        'mac': fdb['mac_address'],
-                        'interface': vlan,
-                        'vlan': vlan_id,
-                        'static': True,
-                        'active': True,
-                        'moves': 0,
-                        'last_move': 0.0,
-                    }
-                )
-
-        return mac_list
+        """F5 version of 'get_mac_address_table' method, see NAPALM for documentation."""
+        raise NotImplementedError
 
     def get_users(self):
-        api_users = self.device.Management.UserManagement.get_list()
-        usernames = [x['name'] for x in api_users]
-        passwords = self.device.Management.UserManagement.get_encrypted_password(
-            usernames)
-        users_dict = {
-            username: {
-                'level': 0,
-                'password': password,
-                'sshkeys': [],
-            } for (username, password) in zip(usernames, passwords)
-        }
+        """F5 version of `get_users` method, see NAPALM for documentation."""
+        users_dict = {}
+        api_users = self.device.load("/mgmt/tm/auth/user/")
+        for user in api_users:
+            users_dict[user.properties["name"]] = {
+                "level": 15 if user.properties["partitionAccess"][0]["role"] == "admin" else 0,
+                "password": user.properties["encryptedPassword"],
+                "sshkeys": [],
+            }
         return users_dict
 
-    def get_ntp_servers(self):
-        return {server: {} for server in
-                self.device.System.Inet.get_ntp_server_address()}
+    def get_ntp_servers(self) -> dict:
+        """F5 version of `get_ntp_servers` method, see NAPALM for documentation.
+
+        Returns:
+            dict: Dictionary of NTP server hosts as key with empty value.
+        """
+        result = self.device.load("/mgmt/tm/sys/ntp/").properties
+        ntp_servers = result.get("servers")
+        return {server: {} for server in ntp_servers}
 
     def get_interfaces_ip(self):
-        def _get_prefix_length(netmask):
-            if ":" in netmask:
-                if netmask.endswith("::"):
-                    netmask = netmask.replace("::", "")
-                return sum(
-                    [bin(int(x, 16)).count("1") for x in netmask.split(":")])
-            else:
-                return sum([bin(int(x)).count("1") for x in netmask.split(".")])
-
-        net_selfs = self.device.Networking.SelfIPV2.get_list()
-        ips = self.device.Networking.SelfIPV2.get_address(net_selfs)
-        netmasks = self.device.Networking.SelfIPV2.get_netmask(net_selfs)
-        prefixes = list(map(_get_prefix_length, netmasks))
-
+        """F5 version of 'get_interfaces_ip' method, see NAPALM for documentation."""
+        result = self.device.load("/mgmt/tm/net/self/")
         interfaces_ip = {}
-
-        for net_self in zip(net_selfs, ips, prefixes):
-            if ':' in net_self[1]:
-                interfaces_ip[net_self[0]] = {
-                    'ipv6': {
-                        net_self[1]: {
-                            'prefix_length': net_self[2]
-                        }
-                    }
-                }
+        for ip in result:
+            host, prefix = tuple(ip.properties["address"].split("/"))
+            if ":" in ip.properties["address"]:
+                interfaces_ip[ip.properties["fullPath"]] = {"ipv6": {host: {"prefix_length": int(prefix)}}}
             else:
-                interfaces_ip[net_self[0]] = {
-                    'ipv4': {
-                        net_self[1]: {
-                            'prefix_length': net_self[2]
-                        }
-                    }
-                }
-
+                interfaces_ip[ip.properties["fullPath"]] = {"ipv4": {host: {"prefix_length": int(prefix)}}}
         return interfaces_ip
 
     def get_environment(self):
-        temperature_metrics = self.device.System.SystemInfo.get_temperature_metrics()
-        blade_temperature = self.device.System.SystemInfo.get_blade_temperature()
-        fan_metrics = self.device.System.SystemInfo.get_fan_metrics()
-        all_host_statistics = self.device.System.Statistics.get_all_host_statistics()
-        global_cpu = self.device.System.SystemInfo.get_global_cpu_usage_extended_information()
-        power_supply_metrics = self.device.System.SystemInfo.get_power_supply_metrics()
-        system_information = self.device.System.SystemInfo.get_system_information()
+        """F5 version of 'get_environment' method, see NAPALM for documentation."""
+        raise NotImplementedError
 
-        model = "{}_{}".format(system_information['product_category'],
-                               system_information['platform'])
+    def get_network_instances(self, name=""):
+        """F5 version of 'get_network_instances' method, see NAPALM for documentation."""
+        raise NotImplementedError
 
-        # TEMPERATURE metrics
-        temperatures = dict()
-        if model in LIMITS:
-            # Parse chassis / appliance temperatures
-            for sensor in temperature_metrics['temperatures']:
-                sensor_id = sensor[0]['value']
-                sensor_value = sensor[1]['value']
+    def get_interfaces_counters(self) -> Dict[str, InterfaceCounterDict]:
+        """F5 version of 'get_interfaces_counters' method, see NAPALM for documentation.
 
-                sensor_max = LIMITS[model][str(sensor_id)][0]
-                sensor_location = LIMITS[model][str(sensor_id)][1]
-
-                temperatures[sensor_location] = {
-                    'temperature': float(sensor_value),
-                    'is_alert': True if sensor_value >= sensor_max * ALERT else False,
-                    'is_critical': True if sensor_value >= sensor_max else False,
-                }
-            # Parse blades' temperatures
-            for sensor in blade_temperature:
-                sensor_value = sensor['temperature']
-                sensor_max = LIMITS[model][sensor['location']][0]
-
-                temperatures[sensor['location']] = {
-                    'temperature': float(sensor_value),
-                    'is_alert': True if sensor_value >= sensor_max * ALERT else False,
-                    'is_critical': True if sensor_value >= sensor_max else False,
-                }
-
-        # FAN metrics
-        # Use fan identifier as a location.
-        # (iControl API doesn't provide fans' locations.)
-        fans = {
-            fan[0]['value']: {
-                'status': True if fan[1]['value'] == 1 else False
-            } for fan in fan_metrics['fans']
-        }
-
-        # CPU metrics
-        cpu_usage = -1
-        for stat in global_cpu['statistics']:
-            if stat['type'] == 'STATISTIC_CPU_INFO_ONE_MIN_AVG_USAGE_RATIO':
-                cpu_usage = self.convert_to_64_bit(stat['value'])
-
-        cpus = {
-            '0': {'%usage':
-                      float(cpu_usage)
-                  }
-        }
-
-        # Power Supply metrics
-        power = dict()
-        for ps in power_supply_metrics['power_supplies']:
-            for metric in ps:
-                if metric['metric_type'] == 'PS_INDEX':
-                    ps_index = metric['value']
-                elif metric['metric_type'] == 'PS_STATE':
-                    ps_state = metric['value']
-                elif metric['metric_type'] == 'PS_INPUT_STATE':
-                    ps_input_state = metric['value']
-                elif metric['metric_type'] == 'PS_OUTPUT_STATE':
-                    ps_output_state = metric['value']
-                elif metric['metric_type'] == 'PS_FAN_STATE':
-                    ps_fan_state = metric['value']
-
-            power[ps_index] = {
-                'status': True if all(v > 0 for v in
-                                      [ps_index, ps_state, ps_input_state,
-                                       ps_output_state,
-                                       ps_fan_state]) else False,
-                'output': -1.0,
-                'capacity': -1.0,
-            }
-
-        total_ram = 0
-        used_ram = 0
-        for host in all_host_statistics['statistics']:
-            for stat in host['statistics']:
-                if stat['type'] == 'STATISTIC_MEMORY_TOTAL_BYTES':
-                    total_ram = total_ram + self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_MEMORY_USED_BYTES':
-                    used_ram = used_ram + self.convert_to_64_bit(stat['value'])
-
-        memory = {
-            "available_ram": total_ram - used_ram,
-            "used_ram": used_ram,
-        }
-
-        env_dict = {
-            'memory': memory,
-            'power': power,
-            'cpu': cpus,
-            'temperature': temperatures,
-            'fans': fans,
-        }
-
-        return env_dict
-
-    def get_network_instances(self, name=''):
-        rd_list = self.device.Networking.RouteDomainV2.get_list()
-        rd_description_list = self.device.Networking.RouteDomainV2.get_description(
-            rd_list)
-        rd_id_list = self.device.Networking.RouteDomainV2.get_identifier(
-            rd_list)
-        rd_vlan_list = self.device.Networking.RouteDomainV2.get_vlan(rd_list)
-
-        instances = {}
-
-        for rd, description, rd_id, rd_vlan in zip(rd_list, rd_description_list,
-                                                   rd_id_list,
-                                                   rd_vlan_list):
-            if rd.split('/')[-1] == '0':
-                instance_name = 'default'
-            else:
-                instance_name = rd.split('/')[-1]
-
-            instances[instance_name] = {
-                'interfaces': {
-                    'interface': {
-                        vlan: {
-                        } for vlan in rd_vlan
-                    }
-                },
-                'state': {
-                    'route_distinguisher': str(rd_id)
-                },
-                'name': instance_name,
-                'type': 'DEFAULT_INSTANCE' if instance_name == 'default' else 'L3VRF',
-            }
-
-        return {name: instances.get(name, {})} if name else instances
-
-    def get_interfaces_counters(self):
+        The REST API reports octets as bit counts, and reports errors and discards only as
+        totals that cannot be split by direction. Counters the device does not break out are
+        returned as -1, per the NAPALM convention for unsupported counters.
+        """
         try:
-            icr_statistics = self._get_interfaces_all_statistics()
-        except bigsuds.OperationFailed as err:
-            raise Exception('get_interfaces: {}'.format(err))
+            statistics = self._get_interfaces_all_statistics()
+        except RESTAPIError as err:
+            raise ConnectionError(f"get_interfaces_counters: {err}") from err
 
         counters = {}
-        for x in icr_statistics['statistics']:
-            if_name = x['interface_name']
-            counters[if_name] = {}
-            counters[if_name]['tx_broadcast_packets'] = -1
-            counters[if_name]['rx_broadcast_packets'] = -1
-
-            for stat in x['statistics']:
-                if stat['type'] == 'STATISTIC_ERRORS_IN':
-                    counters[if_name]['rx_errors'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_ERRORS_OUT':
-                    counters[if_name]['tx_errors'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_IN':
-                    counters[if_name]['rx_discards'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_DROPPED_PACKETS_OUT':
-                    counters[if_name]['tx_discards'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_BYTES_IN':
-                    counters[if_name]['rx_octets'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_BYTES_OUT':
-                    counters[if_name]['tx_octets'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_PACKETS_IN':
-                    counters[if_name][
-                        'rx_unicast_packets'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_PACKETS_OUT':
-                    counters[if_name][
-                        'tx_unicast_packets'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_MULTICASTS_IN':
-                    counters[if_name][
-                        'rx_multicast_packets'] = self.convert_to_64_bit(
-                        stat['value'])
-                elif stat['type'] == 'STATISTIC_MULTICASTS_OUT':
-                    counters[if_name][
-                        'tx_multicast_packets'] = self.convert_to_64_bit(
-                        stat['value'])
-
+        for entry in statistics["entries"].values():
+            stats = entry["nestedStats"]["entries"]
+            counters[stats["tmName"]["description"]] = {
+                "rx_octets": stats["counters.bitsIn"]["value"] // 8,
+                "tx_octets": stats["counters.bitsOut"]["value"] // 8,
+                "rx_unicast_packets": stats["counters.pktsIn"]["value"],
+                "tx_unicast_packets": stats["counters.pktsOut"]["value"],
+                "rx_errors": -1,
+                "tx_errors": -1,
+                "rx_discards": -1,
+                "tx_discards": -1,
+                "rx_multicast_packets": -1,
+                "tx_multicast_packets": -1,
+                "rx_broadcast_packets": -1,
+                "tx_broadcast_packets": -1,
+            }
         return counters
 
     def get_interfaces(self):
-        def if_speed(active_media):
-            if '100000' in active_media:
-                return 100000
-            elif '40000' in active_media:
-                return 40000
-            elif '10000' in active_media:
-                return 10000
-            elif '1000' in active_media:
-                return 1000
-            elif '100' in active_media:
-                return 100
-            else:
-                return -1
+        """F5 version of 'get_interfaces' method, see NAPALM for documentation."""
+
+        def if_speed(active_media) -> float:
+            if "100000" in active_media:
+                return 100000.0
+            if "40000" in active_media:
+                return 40000.0
+            if "10000" in active_media:
+                return 10000.0
+            if "1000" in active_media:
+                return 1000.0
+            if "100" in active_media:
+                return 100.0
+            return -1.0
 
         try:
-            interfaces = self._get_interfaces_list()
-            active_media = self._get_interfaces_active_media(interfaces)
-            description = self._get_interfaces_description(interfaces)
-            enabled_state = self._get_interfaces_enabled_state(interfaces)
-            mac_address = self._get_interfaces_mac_address(interfaces)
-            media_status = self._get_interfaces_media_status(interfaces)
-        except bigsuds.OperationFailed as err:
-            raise Exception('get_interfaces: {}'.format(err))
+            intf_query = self.device.load("/mgmt/tm/net/interface/")
+            interfaces = self._get_interfaces_list(intf_query)
+            active_media = self._get_interfaces_active_media(intf_query)
+            description = self._get_interfaces_description(intf_query)
+            enabled_state = self._get_interfaces_enabled_state(intf_query)
+            mac_address = self._get_interfaces_mac_address(intf_query)
+            media_status = self._get_interfaces_media_status(intf_query)
+            mtu = self._get_interfaces_mtu(intf_query)
+        except RESTAPIError as err:
+            raise ConnectionError(f"get_interfaces: {err}") from err
 
         interfaces_dict = {
             interface_name: {
-                'is_up': True if media_status == 'MEDIA_STATUS_UP' else False,
-                'is_enabled': True if enabled_state == 'STATE_ENABLED' else False,
-                'description': description,
-                'last_flapped': -1.0,
-                'speed': if_speed(active_media),
-                'mac_address': mac_address,
-            } for (
-            interface_name,
-            media_status,
-            enabled_state,
-            description,
-            mac_address,
-            active_media
-        ) in zip(
-            interfaces,
-            media_status,
-            enabled_state,
-            description,
-            mac_address,
-            active_media
-        )
+                "is_up": media_status,
+                "is_enabled": enabled_state,
+                "description": description,
+                "last_flapped": -1.0,
+                "speed": if_speed(active_media),
+                "mac_address": mac_address,
+                "mtu": mtu_val,
+            }
+            for (interface_name, media_status, enabled_state, description, mac_address, active_media, mtu_val) in zip(
+                interfaces, media_status, enabled_state, description, mac_address, active_media, mtu
+            )
         }
 
         return interfaces_dict
 
-    @staticmethod
-    def convert_to_64_bit(value):
-        """ Converts two 32 bit signed integers to a 64-bit unsigned integer.
-            https://devcentral.f5.com/questions/high-and-low-bits-of-64-bit-long-and-c
-            by mhite.
+    def get_vlans(self):
+        """F5 version of 'get_vlans' method, see NAPALM for documentation."""
+        vlans = self.device.load("/mgmt/tm/net/vlan/")
+        vlan_info = {}
+        for vlan in vlans:
+            intfs = self.device.load(f"/mgmt/tm/net/vlan/{vlan.properties['name']}/interfaces")
+            vlan_info[vlan.properties["tag"]] = {
+                "name": vlan.properties["name"],
+                "interfaces": [intf.properties["name"] for intf in intfs],
+            }
+        return vlan_info
+
+    def _upload_scf(self, local_path: str, filename: str):
+        """Upload local_path and move it to /tmp/<filename> on the BIG-IP.
+
+        filename must already have passed _safe_filename(); bigrest stores the upload under that basename.
         """
-        high = value['high']
-        low = value['low']
-        if high < 0:
-            high = high + (1 << 32)
-        if low < 0:
-            low = low + (1 << 32)
-        value = int((high << 32) | low)
-        assert (value >= 0)
-        return value
+        if self.optional_args.get("read_only"):
+            raise ReadOnlyModeException
 
-    def _upload_scf(self, fp):
         try:
-            chunk_size = 512 * 1024
-            filename = os.path.basename(fp)
-            size = os.path.getsize(fp)
-            start = 0
-            with open(fp, 'rb') as fileobj:
-                while True:
-                    payload = base64.b64encode(fileobj.read(chunk_size))
-                    if not payload:
-                        break
-                    end = fileobj.tell()
-
-                    if start == 0 and end == size:
-                        chain_type = 'FILE_FIRST_AND_LAST'
-                    elif start == 0 and end < size:
-                        chain_type = 'FILE_FIRST'
-                    elif start > 0 and end < size:
-                        chain_type = 'FILE_MIDDLE'
-                    elif start > 0 and end == size:
-                        chain_type = 'FILE_LAST'
-
-                    self.device.System.ConfigSync.upload_file(
-                        file_name='/var/local/scf/' + filename,
-                        file_context=dict(
-                            file_data=payload,
-                            chain_type=chain_type
-                        )
-                    )
-
-                    start += len(payload)
-
-        except bigsuds.OperationFailed as e:
-            raise Exception('ConfigSync API Error: {}'.format(e.message))
-        except EnvironmentError as e:
-            raise Exception('Error ({}): {}'.format(e.errno, e.strerror))
-
-
+            self.device.upload("/mgmt/shared/file-transfer/uploads", local_path)
+            # we need to move the file to a whitelisted directory and /tmp is the easiest as it's cleared upon reboot
+            self.device.command(
+                "/mgmt/tm/util/unix-mv",
+                {"command": "run", "utilCmdArgs": f"{REST_DOWNLOADS_DIR}/{filename} /tmp/{filename}"},  # noqa: S108
+            )
+        except RESTAPIError as err:
+            raise ConnectionError(f"F5 API Error: {err}") from err
+        except EnvironmentError as err:
+            raise EnvironmentError(f"Error ({err.errno}): {err.strerror}") from err

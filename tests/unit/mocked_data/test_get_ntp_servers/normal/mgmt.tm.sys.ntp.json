@@ -1,0 +1,10 @@
+{
+    "kind": "tm:sys:ntp:ntpstats",
+    "selfLink": "https://localhost/mgmt/tm/sys/ntp?ver=15.1.0.1",
+    "servers": [
+        "1.us.pool.ntp.org",
+        "2.us.pool.ntp.org",
+        "3.us.pool.ntp.org"
+    ],
+    "timezone": "America/Los_Angeles"
+}

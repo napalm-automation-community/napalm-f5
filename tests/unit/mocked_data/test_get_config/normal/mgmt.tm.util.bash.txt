@@ -1,0 +1,722 @@
+
+auth password-policy {
+        policy-enforcement disabled
+}
+auth remote-role { }
+auth remote-user { }
+auth source { }
+auth user admin {
+        description "Admin User"
+    encrypted-password $6$bF5tUi/E$.Ex4TCpVErHiB7Azm3YR8i9z56ugp/KOshOn0IqTWeI20JB3d1G2PLwLYgtJtHT.oliMBPyDcceO1.vqcu4iy.
+    partition Common
+    partition-access {
+            all-partitions {
+                role admin
+        }
+    }
+    shell bash
+}
+cli global-settings { }
+cli preference {
+        alias-path { /Common }
+    prompt { host user status current-folder config-sync-status }
+}
+cm cert dtca-bundle.crt {
+        certificate-key-size 2048
+    checksum SHA1:4456:a4b2cdc8837040e9b2ea7325829272d6cf2cee61
+    create-time 2020-04-29:12:43:56
+    created-by root
+    expiration-date 1903549433
+    expiration-string "Apr 27 19: 43: 53 2030 GMT"
+    issuer CN=d099361b-6de9-4f7d-901e00505601c145
+    key-type rsa-public
+    last-update-time 2020-04-29:12:43:56
+    mode 33188
+    revision 5
+    serial-number 316802
+    size 4456
+    source-path none
+    subject CN=d099361b-6de9-4f7d-901e00505601c145
+    updated-by root
+    version 3
+}
+cm cert dtca.crt {
+        certificate-key-size 2048
+    checksum SHA1:1306:8eb407d3211fb1f9bf4edc4612f6e73c96fca9d2
+    create-time 2020-04-29:12:43:56
+    created-by root
+    expiration-date 1903549433
+    expiration-string "Apr 27 19: 43: 53 2030 GMT"
+    issuer CN=d099361b-6de9-4f7d-901e00505601c145
+    key-type rsa-public
+    last-update-time 2020-04-29:12:43:56
+    mode 33188
+    revision 4
+    serial-number 316802
+    size 1306
+    source-path none
+    subject CN=d099361b-6de9-4f7d-901e00505601c145
+    updated-by root
+    version 3
+}
+cm cert dtdi.crt {
+        certificate-key-size 2048
+    checksum SHA1:1281:dc1855522c63e7ff98c92693d1044510552833a7
+    create-time 2020-04-29:12:43:56
+    created-by root
+    expiration-date 1903549436
+    expiration-string "Apr 27 19: 43: 56 2030 GMT"
+    issuer CN=d099361b-6de9-4f7d-901e00505601c145
+    key-type rsa-public
+    last-update-time 2020-04-29:12:43:56
+    mode 33188
+    revision 5
+    serial-number 523089
+    size 1281
+    source-path none
+    subject CN=bigip-a.example.net
+    updated-by root
+    version 3
+}
+cm device bigip-a.example.net {
+        active-modules { "MSP, Best with AWF,
+    200Mbps|XAUXIUD-MMCSTXC|Rate Shaping|SSL, VE|Max Compression, VE|AFM, VE|MSP, APM, (500 CCU)|DNS-GTM, Base,
+    200M|Crypto Offload, VE|SDN Services, VE|Advanced Web Application Firewall, VE|DNSSEC|Anti-Virus Checks|Base Endpoint Security Checks|Firewall Checks|Network Access|Secure Virtual Keyboard|APM, Web Application|Machine Certificate Checks|Protected Workspace|Remote Desktop|App Tunnel|DNS Rate Limit,
+    1000 QPS|GTM Rate,
+    1000|Routing Bundle, VE|VE, Carrier Grade NAT (AFM ONLY)|PSM, VE" }
+        base-mac 00:50:56:01:3b:68
+        build 0.0.4
+        cert dtdi.crt
+        chassis-id 423d8d5a-62ba-6100-8de40da65025
+        edition "Point Release 1"
+        failover-state active
+        hostname bigip-a.example.net
+        key dtdi.key
+        management-ip 192.168.2.245
+        marketing-name "BIG-IP Virtual Edition"
+        platform-id Z100
+        product BIG-IP
+        self-device true
+        time-zone America/Los_Angeles
+        version 15.1.0.1
+    }
+    cm device-group datasync-device-bigip-a.example.net-dg {
+            auto-sync enabled
+        devices {
+                bigip-a.example.net { }
+        }
+        full-load-on-sync true
+        network-failover disabled
+    }
+    cm device-group datasync-global-dg {
+            devices {
+                bigip-a.example.net { }
+        }
+        full-load-on-sync true
+        network-failover disabled
+    }
+    cm device-group device_trust_group {
+            auto-sync enabled
+        devices {
+                bigip-a.example.net { }
+        }
+        network-failover disabled
+    }
+    cm device-group gtm {
+            devices {
+                bigip-a.example.net { }
+        }
+        network-failover disabled
+    }
+    cm key dtca.key {
+            checksum SHA1:1704:115e7e56c07b465d507e94a5beb0e337ff351bd1
+        create-time 2020-04-29:12:43:56
+        created-by root
+        key-size 2048
+        last-update-time 2020-04-29:12:43:56
+        mode 33184
+        revision 4
+        size 1704
+        source-path none
+        updated-by root
+    }
+    cm key dtdi.key {
+            checksum SHA1:1704:d9aa0cb768141392df31f720b1f3e967f473d55f
+        create-time 2020-04-29:12:43:56
+        created-by root
+        key-size 2048
+        last-update-time 2020-04-29:12:43:56
+        mode 33184
+        revision 5
+        size 1704
+        source-path none
+        updated-by root
+    }
+    cm traffic-group traffic-group-1 {
+            unit-id 1
+    }
+    cm traffic-group traffic-group-local-only {
+            is-floating false
+    }
+    cm trust-domain Root {
+            ca-cert dtca.crt
+        ca-cert-bundle dtca-bundle.crt
+        ca-devices { /Common/bigip-a.example.net }
+        ca-key dtca.key
+        status standalone
+        trust-group device_trust_group
+    }
+    ltm data-group internal user_agents {
+            records {
+                agent {
+                    data IE9
+            }
+            agent1 {
+                    data IE11
+            }
+            agent2 {
+                    data IE11
+            }
+            agent3 {
+                    data Chrome
+            }
+            agent4 {
+                    data Firefox
+            }
+            agent5 {
+                    data Safari
+            }
+            agent6 {
+                    data iPhone5
+            }
+            agent7 {
+                    data iPhone6
+            }
+            agent8 {
+                    data iPhone6
+            }
+            agent9 {
+                    data Android
+            }
+        }
+        type string
+    }
+    ltm default-node-monitor {
+            rule none
+    }
+    ltm dns analytics global-settings { }
+    ltm dns cache global-settings { }
+    ltm global-settings connection { }
+    ltm global-settings general {
+            share-single-mac vmw-compat
+    }
+    ltm global-settings rule { }
+    ltm global-settings traffic-control { }
+    ltm node 192.168.103.20 {
+            address 192.168.103.20
+    }
+    ltm persistence global-settings { }
+    ltm pool mergepool {
+            members {
+                192.168.103.20:http {
+                    address 192.168.103.20
+                session monitor-enabled
+                state down
+            }
+        }
+        monitor http
+    }
+    ltm rule delay_server {
+        when LB_SELECTED {
+            # After a member has been selected by the load balancing algorithm introduce delay
+        # (in milliseconds) on the specified URL or server
+           if {([LB::server addr] equals "10.128.20.13") and ([HTTP::uri] equals "/welcome.php")} { after 10}
+    
+           if {[LB::server addr] equals "10.128.20.13"} {after 20}
+        }
+    }
+    ltm rule random_client_ip {
+        when CLIENT_ACCEPTED {
+        # Create a random IP address and use it to replace the client IP to simulate many clients
+    # going through the virtual
+       snat [expr int(rand()*255)].[expr int(rand()*255)].[expr int(rand()*255)].[expr int(rand()*254)]
+       virtual avr_virtual2
+    }
+    when HTTP_REQUEST {
+        # When the HTTP request comes in, select a random user agents and put that agent
+    # in the user-agent HTTP header to simulate many different user agents
+       set my_index [expr int(rand()*10)]
+       set user_agent [class element -value $my_index user_agents]
+          HTTP::header replace User-Agent $user_agent
+    }
+    }
+    ltm tacdb licenseddb licensed-tacdb {
+            partition none
+    }
+    net cos global-settings { }
+    net dag-globals { }
+    net dns-resolver f5-aws-dns {
+            forward-zones {
+                amazonaws.com {
+                    nameservers {
+                        8.8.8.8:domain { }
+                }
+            }
+            idservice.net {
+                    nameservers {
+                        8.8.8.8:domain { }
+                }
+            }
+        }
+        route-domain 0
+    }
+    net fdb tunnel http-tunnel { }
+    net fdb tunnel socks-tunnel { }
+    net fdb vlan EXTERNAL { }
+    net fdb vlan INTERNAL { }
+    net interface 1.1 {
+            if-index 48
+        lldp-admin txrx
+        mac-address 00:50:56:01:3b:69
+        media-active 10000T-FD
+        media-fixed 10000T-FD
+        media-max auto
+        mtu 9198
+    }
+    net interface 1.2 {
+            if-index 64
+        lldp-admin txrx
+        mac-address 00:50:56:01:3b:6a
+        media-active 10000T-FD
+        media-fixed 10000T-FD
+        media-max auto
+        mtu 9198
+    }
+    net interface 1.3 {
+            if-index 80
+        lldp-admin txrx
+        mac-address 00:50:56:01:3b:6b
+        media-fixed 10000T-FD
+        media-max auto
+        mtu 9198
+    }
+    net interface mgmt {
+            if-index 32
+        mac-address 00:50:56:01:3b:68
+        media-active 100TX-FD
+    }
+    net ipsec ike-daemon ikedaemon {
+            log-publisher default-ipsec-log-publisher
+    }
+    net lldp-globals { }
+    net multicast-globals { }
+    net packet-filter-trusted { }
+    net port-list _sys_self_allow_tcp_defaults {
+            ports {
+                1029-1043 { }
+            domain { }
+            f5-iquery { }
+            https { }
+            snmp { }
+            ssh { }
+        }
+    }
+    net port-list _sys_self_allow_udp_defaults {
+            ports {
+                520 { }
+            cap { }
+            domain { }
+            f5-iquery { }
+            snmp { }
+        }
+    }
+    net route-domain 0 {
+            id 0
+        vlans {
+                INTERNAL
+            EXTERNAL
+            http-tunnel
+            socks-tunnel
+        }
+    }
+    net self-allow {
+            defaults {
+                igmp:any
+            ospf:any
+            pim:any
+            tcp:domain
+            tcp:f5-iquery
+            tcp:https
+            tcp:snmp
+            tcp:ssh
+            udp:520
+            udp:cap
+            udp:domain
+            udp:f5-iquery
+            udp:snmp
+        }
+    }
+    net stp-globals { }
+    net tunnels tunnel http-tunnel {
+            description "Tunnel for http-explicit profile"
+        if-index 112
+        profile tcp-forward
+    }
+    net tunnels tunnel socks-tunnel {
+            description "Tunnel for socks profile"
+        if-index 128
+        profile tcp-forward
+    }
+    net vlan EXTERNAL {
+            fwd-mode l3
+        if-index 144
+        interfaces {
+                1.1 {
+                    tagged
+            }
+        }
+        sflow {
+                poll-interval-global no
+            sampling-rate-global no
+        }
+        tag 100
+    }
+    net vlan INTERNAL {
+            fwd-mode l3
+        if-index 160
+        interfaces {
+                1.2 { }
+        }
+        sflow {
+                poll-interval-global no
+            sampling-rate-global no
+        }
+        tag 101
+    }
+    security firewall management-ip-rules { }
+    sys aom { }
+    sys autoscale-group { }
+    sys core {
+            bigd-action rotate
+        bigd-manage false
+        bigd-max 1
+        mcpd-action rotate
+        mcpd-manage false
+        mcpd-max 1
+        retention 30
+        tmm-action rotate
+        tmm-manage false
+        tmm-max 1
+    }
+    sys crypto acceleration-strategy { }
+    sys crypto allow-key-export { }
+    sys crypto key f5_api_com.key {
+            key-size 4096
+        key-type rsa-private
+        security-type password
+    }
+    sys daemon-log-settings clusterd { }
+    sys daemon-log-settings csyncd { }
+    sys daemon-log-settings icr-eventd { }
+    sys daemon-log-settings icrd { }
+    sys daemon-log-settings lind { }
+    sys daemon-log-settings mcpd { }
+    sys daemon-log-settings tmm { }
+    sys datastor { }
+    sys diags ihealth {
+            expiration 30
+        no-ihealth false
+        options none
+        password none
+        user none
+    }
+    sys diags ihealth-request {
+            error-str none
+        ihealth-finish-time 0
+        ihealth-start-time 0
+        progress 0
+        qk-progress 0
+        qk-progress-msg none
+        qkview-date 0
+        qkview-filename none
+        qkview-size 0
+        qkview-user none
+        tcpdump-date 0
+        tcpdump-filename none
+        tcpdump-size 0
+    }
+    sys disk application-volume asmdata1 {
+            logical-disk HD1
+        owner asm
+        preservability precious
+        size 4152
+        volume-set-visibility-restraint none
+    }
+    sys disk application-volume avrdata {
+            logical-disk HD1
+        owner avr
+        preservability precious
+        size 3900
+        volume-set-visibility-restraint none
+    }
+    sys disk application-volume mysqldb_HD1.1 {
+            logical-disk HD1
+        owner mysql
+        preservability precious
+        size 12288
+        volume-set-visibility-restraint HD1.1
+    }
+    sys disk application-volume mysqldb_HD1.2 {
+            logical-disk HD1
+        owner mysql
+        preservability precious
+        size 12288
+        volume-set-visibility-restraint HD1.2
+    }
+    sys disk logical-disk HD1 {
+            mode mixed
+        size 132096
+        vg-free 52888
+        vg-in-use 78988
+    }
+    sys disk logical-disk HD2 {
+            size 20480
+        vg-reserved 4096
+    }
+    sys dns {
+            name-servers { 10.255.0.1 }
+        search none
+    }
+    sys dynad settings {
+            development-mode false
+    }
+    sys ecm cloud-provider aws-ec2 {
+            description "The aws-ec2 parameters"
+        property-template {
+                account { }
+            availability-zone {
+                    valid-values { a b c d }
+            }
+            instance-type {
+                    valid-values { t2.micro t2.small t2.medium m3.medium m3.large m3.xlarge m3.2xlarge c3.large c3.xlarge c3.2xlarge c3.4xlarge c3.8xlarge r3.large r3.xlarge r3.2xlarge r3.4xlarge r3.8xlarge }
+            }
+            region {
+                    valid-values { us-east-1 us-west-1 us-west-2 sa-east-1 eu-west-1 eu-central-1 ap-southeast-2 ap-southeast-1 ap-northeast-1 }
+            }
+        }
+    }
+    sys ecm cloud-provider dnet {
+            description "The dnet parameters"
+    }
+    sys ecm cloud-provider vsphere {
+            description "The vsphere parameters"
+        property-template {
+                cloud-host-ip { }
+            dhcp-network-name { }
+            end-point-url { }
+            node-name { }
+        }
+    }
+    sys ecm config { }
+    sys file ssl-key f5_api_com.key {
+            checksum SHA1:3306:681a7bb85817e1469fbaa81ee84a9d5a23c20086
+        create-time 2022-03-28:11:15:44
+        created-by root
+        key-size 4096
+        last-update-time 2022-03-28:11:15:44
+        mode 33184
+        passphrase $M$c6$Yqy/xHE0c9kK0b+EdmauDPG6n+X/Uf2+vCroMjtblHxwyzmbCqtPq8do8ZCtOuNwRGhwQkrWNOMDTeKuEaQDkcOK4PShrZEfQhZRjEf9zVc=
+        revision 1
+        security-type password
+        size 3306
+        source-path file:///config/ssl/ssl.key/f5_api_com.key
+        updated-by root
+    }
+    sys folder Drafts {
+            device-group none
+        inherited-devicegroup true
+        inherited-traffic-group true
+        traffic-group traffic-group-1
+    }
+    sys folder datasync-global {
+            device-group datasync-global-dg
+        inherited-devicegroup false
+        inherited-traffic-group false
+        traffic-group traffic-group-local-only
+    }
+    sys fpga firmware-config {
+            type standard-balanced-fpga
+    }
+    sys global-settings {
+            gui-setup disabled
+        hostname bigip-a.example.net
+        mgmt-dhcp disabled
+    }
+    sys httpd { }
+    sys icontrol-soap { }
+    sys log-rotate { }
+    sys management-dhcp sys-mgmt-dhcp-config {
+            request-options { subnet-mask broadcast-address routers domain-name domain-name-servers host-name ntp-servers interface-mtu }
+    }
+    sys management-ip 192.168.2.245/24 {
+            description configured-statically
+    }
+    sys management-ovsdb {
+            bfd-disabled
+        bfd-route-domain none
+        ca-cert-file none
+        cert-file none
+        cert-key-file none
+        disabled
+        flooding-type replicator
+        log-level info
+        logical-routing-type none
+        tunnel-maintenance-mode active
+    }
+    sys management-route default {
+            description configured-statically
+        gateway 192.168.2.1
+        network default
+    }
+    sys ntp { }
+    sys outbound-smtp {
+            from-line-override disabled
+        mailhub localhost
+    }
+    sys provision avr {
+            level nominal
+    }
+    sys provision ltm {
+            level nominal
+    }
+    sys scriptd { }
+    sys sflow global-settings http { }
+    sys sflow global-settings interface { }
+    sys sflow global-settings system { }
+    sys sflow global-settings vlan { }
+    sys snmp {
+            agent-addresses { tcp6:161 udp6:161 }
+        communities {
+                comm-public {
+                    community-name public
+                source default
+            }
+        }
+        disk-monitors {
+                root {
+                    minspace 2000
+                path /
+            }
+            var {
+                    minspace 10000
+                path /var
+            }
+        }
+        process-monitors {
+                bigd {
+                    process bigd
+            }
+            chmand {
+                    process chmand
+            }
+            httpd {
+                    max-processes infinity
+                process httpd
+            }
+            mcpd {
+                    process mcpd
+            }
+            sod {
+                    process sod
+            }
+            tmm {
+                    max-processes infinity
+                process tmm
+            }
+        }
+    }
+    sys software update {
+            auto-check enabled
+        auto-phonehome enabled
+        frequency weekly
+    }
+    sys software update-status GEOLOC-ISP {
+            available ip-geolocation-v2-2.0.0-20240429.95.0
+        check-user root
+        label "Geo Location ISP Data"
+        last-checked 2024-05-01:20:49:14
+        last-checked-auto-mode enabled
+        last-checked-version 2.0.0-20191230.420.0
+        progress-status available
+        url https://downloads.f5.com/esd/ecc.sv\\?sw=BIG-IP&pro=big-ip_v15.x&ver=15.1.0&container=GeoLocationUpdates_Pulse
+    }
+    sys software update-status GEOLOC-Region2 {
+            available ip-geolocation-v2-2.0.0-20240429.95.0
+        check-user root
+        label "Geo Location Region2 (Worldwide) Data"
+        last-checked 2024-05-01:20:49:14
+        last-checked-auto-mode enabled
+        last-checked-version 2.0.0-20191230.420.0
+        progress-status available
+        url https://downloads.f5.com/esd/ecc.sv\\?sw=BIG-IP&pro=big-ip_v15.x&ver=15.1.0&container=GeoLocationUpdates_Pulse
+    }
+    sys software update-status GEOLOC-v6 {
+            available ip-geolocation-v2-2.0.0-20240429.95.0
+        check-user root
+        label "Geo Location v6 Data"
+        last-checked 2024-05-01:20:49:14
+        last-checked-auto-mode enabled
+        last-checked-version 2.0.0-20191230.420.0
+        progress-status available
+        url https://downloads.f5.com/esd/ecc.sv\\?sw=BIG-IP&pro=big-ip_v15.x&ver=15.1.0&container=GeoLocationUpdates_Pulse
+    }
+    sys software update-status RELEASE {
+            available "Use for upgrades. Does not include EUD."
+        check-user root
+        label "BIG-IP Version"
+        last-checked 2024-05-01:20:49:14
+        last-checked-auto-mode enabled
+        last-checked-version 15.1.0.1-0.0.4
+        progress-status available
+        url https://downloads.f5.com/esd/ecc.sv\\?sw=BIG-IP&pro=big-ip_v15.x&ver=15.1.10&container=15.1.10.4
+    }
+    sys software volume HD1.1 {
+            basebuild 0.0.1645
+        build 2.0.1671
+        media {
+                HD1.1 {
+                    media hd
+                size default
+            }
+        }
+        product BIG-IP
+        status complete
+        version 13.0.0
+    }
+    sys software volume HD1.2 {
+            active
+        active-requested
+        basebuild 0.0.4
+        build 0.0.4
+        media {
+                HD1.2 {
+                    default-boot-location
+                media hd
+                size default
+            }
+        }
+        product BIG-IP
+        status complete
+        version 15.1.0.1
+    }
+    sys sshd { }
+    sys state-mirroring { }
+    sys syslog { }
+    sys telemd {
+            partition none
+    }
+    sys turboflex profile-config {
+            type turboflex-adc
+    }
+    sys url-db download-schedule urldb { }
+    ",
