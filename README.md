@@ -46,7 +46,7 @@ As shown in the example above, the use of NAPALM's context manager is supported 
 | `read_only`  | `False` | Refuse any driver method that can change the device. See [Required Privileges](#required-privileges). |
 | `ssl_verify` | `True`  | TLS certificate verification for the iControl REST connection: `True`, `False`, or a path to a CA bundle. |
 
-> **Breaking change:** `ssl_verify` defaults to `True`, so TLS certificates are now verified by default. Earlier REST releases always disabled verification. To connect to a device with a self-signed certificate, either set `optional_args = {"ssl_verify": "/path/to/ca-bundle.pem"}` or, if you accept the risk, `optional_args = {"ssl_verify": False}`.
+> TLS certificates are verified by default. To connect to a device with a self-signed certificate, either set `optional_args = {"ssl_verify": "/path/to/ca-bundle.pem"}` or, if you accept the risk, `optional_args = {"ssl_verify": False}`.
 
 ## Required Privileges
 
