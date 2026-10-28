@@ -15,7 +15,7 @@ This table identifies the currently available configuration methods supported:
 | ------------------------- | --------- |
 | Config Replace            | ✅        |
 | Commit Confirm            | ❌        |
-| Config Merge              | ❌        |
+| Config Merge              | ✅        |
 | Compare Config            | ❌        |
 | Atomic Changes            | ❌        |
 | Rollback                  | ❌        |
